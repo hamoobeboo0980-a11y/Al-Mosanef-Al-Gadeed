@@ -6,7 +6,7 @@ var GAI = require('@google/generative-ai');
 
 var app = express();
 var PORT = process.env.PORT || 8080;
-var API_KEY = 'AIzaSyByHvd4k1-E9ohSI7gLGdNieqe7J2AhSBE';
+var API_KEY = process.env.GEMINI_KEY || '';
 var genAI = new GAI.GoogleGenerativeAI(API_KEY);
 console.log('API Key configured:', API_KEY ? 'yes (' + API_KEY.substring(0,8) + '...)' : 'NO KEY!');
 
