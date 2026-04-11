@@ -2,368 +2,215 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#0a0a0f">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0d1117">
 <link rel="manifest" href="/manifest.json">
 <title>مصنّف الذاكرة</title>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
-/* ═══════════════════════════════════════════════
-   CSS — PWA Mobile-First Design
-   ═══════════════════════════════════════════════ */
 *{margin:0;padding:0;box-sizing:border-box}
-:root{
-  --bg:#0a0a0f;--card:#12121a;--border:#1e1e2e;
-  --accent:#00d4ff;--accent2:#ff6b35;
-  --glass:rgba(255,255,255,0.04);--text:#e8e8f0;--muted:#6b6b8a;
-}
-body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
+body{font-family:'Segoe UI',Tahoma,sans-serif;background:#0d1117;color:#e6edf3;min-height:100vh;direction:rtl}
+.app{max-width:480px;margin:0 auto;padding:12px}
+h1{text-align:center;font-size:20px;padding:10px 0;color:#58a6ff}
 
-/* ─── LED Bar ─── */
-.led-bar{display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 16px 4px;background:var(--card)}
-.led{width:8px;height:8px;border-radius:50%;background:#2a2a3a;transition:all .3s ease;flex-shrink:0}
-.led.active{box-shadow:0 0 6px 2px currentColor}
-.led.scanning{animation:ledPulse .6s ease-in-out infinite}
-@keyframes ledPulse{0%,100%{opacity:.3}50%{opacity:1}}
+/* Camera */
+.cam-box{position:relative;width:100%;aspect-ratio:4/3;background:#161b22;border-radius:12px;overflow:hidden;margin-bottom:10px}
+.cam-box video{width:100%;height:100%;object-fit:cover}
+.focus-rect{position:absolute;top:50%;left:50%;width:25%;aspect-ratio:1/1.2;transform:translate(-50%,-50%);border:2px solid #58a6ff;border-radius:6px;pointer-events:none}
+.quality-bar{display:flex;gap:8px;justify-content:center;padding:4px;font-size:12px;color:#8b949e}
+.q-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:4px;background:#555}
+.q-dot.good{background:#2ea043}.q-dot.warn{background:#d29922}.q-dot.bad{background:#f85149}
+.auto-msg{text-align:center;font-size:13px;color:#8b949e;min-height:20px;padding:4px}
+.progress-track{height:3px;background:#21262d;border-radius:2px;margin:0 20px 8px}
+.progress-fill{height:100%;background:#58a6ff;border-radius:2px;width:0%;transition:width 0.3s}
 
-/* ─── Status Bar ─── */
-.status-bar{display:flex;align-items:center;justify-content:space-between;padding:6px 16px;background:var(--card);border-bottom:1px solid var(--border);font-size:12px}
-.status-dot{width:8px;height:8px;border-radius:50%;background:#666;margin-left:6px;display:inline-block}
+/* Buttons */
+.btns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:10px}
+.btn{padding:10px 16px;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-family:inherit}
+.btn-main{background:#238636;color:#fff;font-size:16px;flex:1;max-width:200px}
+.btn-sec{background:#21262d;color:#c9d1d9}
+.btn-sec:active,.btn-main:active{opacity:0.7}
+label.btn-sec{display:inline-flex;align-items:center;gap:4px}
+label.btn-sec input{display:none}
 
-/* ─── Camera ─── */
-.camera-wrap{position:relative;width:100%;background:#000;aspect-ratio:4/3;overflow:hidden}
-.camera-wrap video{width:100%;height:100%;object-fit:cover}
-.focus-box{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:25%;aspect-ratio:1.2;border:2px solid var(--accent);border-radius:8px;pointer-events:none;box-shadow:0 0 0 9999px rgba(0,0,0,0.35)}
-.focus-box::before{content:'';position:absolute;top:-1px;left:-1px;right:-1px;bottom:-1px;border:1px solid rgba(0,212,255,0.3);border-radius:8px}
-.scan-line{position:absolute;top:0;left:15%;width:70%;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:0;pointer-events:none}
-.scan-line.active{opacity:1;animation:scanMove 1.5s ease-in-out infinite}
-@keyframes scanMove{0%{top:30%}100%{top:70%}}
+/* Manual Input */
+.manual{display:flex;gap:6px;margin-bottom:12px}
+.manual input{flex:1;padding:10px;border-radius:8px;border:1px solid #30363d;background:#161b22;color:#e6edf3;font-size:14px;text-align:center}
+.manual button{padding:10px 16px;border-radius:8px;border:none;background:#238636;color:#fff;font-size:16px;cursor:pointer}
 
-/* ─── Quality Indicators ─── */
-.quality-bar{display:flex;justify-content:center;gap:16px;padding:6px;background:var(--card);font-size:11px;color:var(--muted)}
-.q-item{display:flex;align-items:center;gap:4px}
-.q-dot{width:6px;height:6px;border-radius:50%;background:#666}
-.q-dot.good{background:#00e676;box-shadow:0 0 4px #00e676}
-.q-dot.warn{background:#ffab00;box-shadow:0 0 4px #ffab00}
-.q-dot.bad{background:#ff1744;box-shadow:0 0 4px #ff1744}
+/* Status */
+.status{text-align:center;font-size:12px;color:#8b949e;margin-bottom:8px}
 
-/* ─── Auto Progress ─── */
-.auto-progress{height:3px;background:var(--border)}
-.auto-progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),#00e676);width:0;transition:width .3s}
+/* Result Card */
+.result{display:none;background:#161b22;border:1px solid #30363d;border-radius:12px;padding:16px;margin-bottom:12px;text-align:center}
+.result.show{display:block}
+.result .code{font-size:16px;font-weight:bold;color:#58a6ff;word-break:break-all;margin-bottom:8px}
+.result .time{font-size:11px;color:#8b949e;margin-bottom:8px}
+.badge{display:inline-block;padding:4px 14px;border-radius:20px;font-size:14px;font-weight:bold;margin-bottom:8px}
+.badge.normal{background:#1a3a1a;color:#2ea043;border:1px solid #2ea043}
+.badge.glass{background:#1a2a3a;color:#58a6ff;border:1px solid #58a6ff}
+.storage{font-size:42px;font-weight:bold;color:#e6edf3}
+.storage span{font-size:16px;color:#8b949e}
+.chips{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:8px}
+.chip{background:#21262d;padding:4px 10px;border-radius:12px;font-size:12px;color:#c9d1d9}
 
-/* ─── Controls ─── */
-.controls{display:flex;gap:8px;padding:10px 16px;background:var(--card);justify-content:center;flex-wrap:wrap}
-.btn{border:none;border-radius:10px;font-family:'Cairo',sans-serif;font-weight:700;cursor:pointer;padding:10px 18px;font-size:13px;transition:all .2s}
-.btn-primary{background:linear-gradient(135deg,var(--accent),#0099cc);color:#fff}
-.btn-secondary{background:var(--glass);border:1px solid var(--border);color:var(--text)}
-.btn-danger{background:linear-gradient(135deg,#ff6b35,#ff3366);color:#fff}
-.btn:active{transform:scale(0.95)}
+/* Confirm/Correct */
+.actions{display:none;gap:8px;justify-content:center;margin-bottom:10px}
+.actions.show{display:flex}
+.correction{display:none;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:12px;margin-bottom:10px}
+.correction.show{display:block}
+.correction select,.correction input{width:100%;padding:8px;margin:4px 0;border-radius:6px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;font-size:13px}
 
-/* ─── Manual Input ─── */
-.manual-row{display:flex;gap:8px;padding:8px 16px;background:var(--card)}
-.manual-row input{flex:1;background:var(--glass);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Cairo',sans-serif;padding:8px 12px;font-size:14px;direction:ltr;text-align:left}
-.manual-row input::placeholder{color:var(--muted)}
+/* Chat */
+.chat-box{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:10px;margin-bottom:12px}
+.chat-msgs{max-height:150px;overflow-y:auto;margin-bottom:8px;font-size:13px}
+.chat-msgs .msg{padding:4px 0;border-bottom:1px solid #21262d}
+.chat-msgs .from{color:#58a6ff;font-weight:bold}
+.chat-row{display:flex;gap:6px}
+.chat-row input{flex:1;padding:8px;border-radius:6px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;font-size:13px}
+.chat-row button{padding:8px 14px;border-radius:6px;border:none;background:#238636;color:#fff;cursor:pointer;font-size:13px}
 
-/* ─── Result Card ─── */
-.result-card{display:none;margin:10px 16px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;text-align:center}
-.result-card.show{display:block;animation:slideUp .3s ease}
-@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-.result-code{font-size:16px;font-weight:700;color:var(--accent);direction:ltr;margin-bottom:8px;word-break:break-all}
-.result-time{font-size:11px;color:var(--muted);margin-bottom:12px}
-.type-badge{display:inline-block;padding:4px 16px;border-radius:20px;font-size:13px;font-weight:700}
-.type-badge.normal{background:rgba(255,255,255,0.08);color:#e0e0e0}
-.type-badge.glass{background:rgba(0,150,255,0.15);color:#4fc3f7}
-.storage-num{font-size:48px;font-weight:900;color:#fff;line-height:1}
-.storage-unit{font-size:14px;color:var(--muted)}
-.info-chip{display:inline-block;background:var(--glass);border:1px solid var(--border);border-radius:8px;padding:4px 12px;font-size:12px;margin-top:8px}
+/* Training */
+.train-toggle{text-align:center;margin-bottom:10px}
+.train-toggle button{background:none;border:1px solid #30363d;color:#8b949e;padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer}
+.train-panel{display:none;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:12px;margin-bottom:12px}
+.train-panel.show{display:block}
+.train-panel input{width:100%;padding:8px;margin:4px 0;border-radius:6px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;font-size:13px}
+.train-list{max-height:100px;overflow-y:auto;margin:8px 0;font-size:12px;color:#8b949e}
 
-/* ─── Confirm/Correct Actions ─── */
-.confirm-actions{display:none;gap:8px;padding:8px 16px;justify-content:center}
-.correction-form{display:none;padding:10px 16px;background:var(--card);border-top:1px solid var(--border)}
-.correction-form select,.correction-form input{background:var(--glass);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Cairo',sans-serif;padding:8px;font-size:13px;width:100%;margin-bottom:8px}
-
-/* ─── Loading ─── */
-.loading-card{display:none;margin:10px 16px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;text-align:center}
-.loading-card.show{display:block}
-.loading-spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px}
+/* Loading */
+.loading{display:none;text-align:center;padding:20px;color:#8b949e}
+.loading.show{display:block}
+.spinner{display:inline-block;width:30px;height:30px;border:3px solid #30363d;border-top:3px solid #58a6ff;border-radius:50%;animation:spin 0.8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.loading-steps{text-align:right;font-size:12px;color:var(--muted)}
-.loading-steps .step{padding:2px 0;transition:color .3s}
-.loading-steps .step.active{color:var(--accent)}
-.loading-steps .step.done{color:#00e676}
 
-/* ─── Error ─── */
-.error-card{display:none;margin:10px 16px;background:rgba(255,23,68,0.08);border:1px solid rgba(255,23,68,0.2);border-radius:12px;padding:12px;text-align:center;color:#ff6b6b;font-size:13px}
-.error-card.show{display:block}
-
-/* ─── Chat ─── */
-.chat-section{padding:10px 16px}
-.chat-msgs{max-height:200px;overflow-y:auto;margin-bottom:8px}
-.chat-msg{padding:6px 10px;margin-bottom:4px;border-radius:10px;font-size:13px;line-height:1.6;direction:rtl}
-.chat-msg.bot{background:var(--glass);border:1px solid var(--border)}
-.chat-msg.user{background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.15);text-align:right}
-.chat-input-row{display:flex;gap:8px}
-.chat-input-row input{flex:1;background:var(--glass);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Cairo',sans-serif;padding:8px 12px;font-size:13px}
-.chat-input-row button{background:var(--accent);border:none;border-radius:8px;color:#000;font-family:'Cairo',sans-serif;font-weight:700;padding:8px 14px;cursor:pointer;font-size:13px}
-
-/* ─── Stats ─── */
-.stats-bar{display:flex;justify-content:space-around;padding:8px 16px;background:var(--card);border-top:1px solid var(--border);font-size:11px;color:var(--muted)}
-.stat-item{text-align:center}
-.stat-num{font-size:16px;font-weight:700;color:var(--text)}
-
-/* ─── Scrollbar ─── */
-::-webkit-scrollbar{width:4px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.error{display:none;text-align:center;padding:10px;color:#f85149;font-size:13px}
+.error.show{display:block}
 </style>
 </head>
 <body>
+<div class="app">
+<h1>مصنّف الذاكرة</h1>
 
-<!-- ═══ LED Bar ═══ -->
-<div class="led-bar" id="ledBar">
-  <div class="led" id="led-vision" style="color:#00e676" title="Vision OCR"></div>
-  <div class="led" id="led-db" style="color:#2196f3" title="DB Search"></div>
-  <div class="led" id="led-gemini" style="color:#ff9800" title="Gemini AI"></div>
-  <div class="led" id="led-rag" style="color:#e040fb" title="RAG Selector"></div>
-  <div class="led" id="led-fuzzy" style="color:#ffeb3b" title="Fuzzy Match"></div>
-  <div class="led" id="led-cache" style="color:#00bcd4" title="Cache"></div>
-  <div class="led" id="led-pattern" style="color:#8bc34a" title="Pattern"></div>
-  <div class="led" id="led-correction" style="color:#ff5722" title="Correction"></div>
-  <div class="led" id="led-failed" style="color:#f44336" title="Failed"></div>
-</div>
-
-<!-- ═══ Status Bar ═══ -->
-<div class="status-bar">
-  <div><span id="statusDot" class="status-dot"></span><span id="statusText">جاهز</span></div>
-  <div>📊 <span id="sessionCount">0</span></div>
-</div>
-
-<!-- ═══ Camera ═══ -->
-<div class="camera-wrap" id="cameraWrapper" onclick="tapCapture()">
+<!-- Camera -->
+<div class="cam-box" id="camBox">
   <video id="video" autoplay playsinline muted></video>
-  <div class="focus-box"></div>
-  <div class="scan-line" id="scanLine"></div>
+  <div class="focus-rect"></div>
 </div>
-
-<!-- ═══ Quality Indicators ═══ -->
 <div class="quality-bar">
-  <div class="q-item"><span class="q-dot" id="qSharp"></span> حدة</div>
-  <div class="q-item"><span class="q-dot" id="qStable"></span> ثبات</div>
-  <div class="q-item"><span class="q-dot" id="qLight"></span> إضاءة</div>
+  <span>حدة <span class="q-dot" id="qSharp"></span></span>
+  <span>ثبات <span class="q-dot" id="qStable"></span></span>
+  <span>إضاءة <span class="q-dot" id="qLight"></span></span>
+</div>
+<div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+<div class="auto-msg" id="autoMsg">جاري تشغيل الكاميرا...</div>
+
+<!-- Buttons -->
+<div class="btns">
+  <button class="btn btn-main" onclick="tapCapture()">📸 صوّر</button>
+  <button class="btn btn-sec" id="flashBtn" onclick="toggleFlash()">🔦 فلاش</button>
+  <label class="btn btn-sec">📁 ملف<input type="file" accept="image/*" onchange="handleFile(event)"></label>
 </div>
 
-<!-- ═══ Auto Progress ═══ -->
-<div class="auto-progress"><div class="auto-progress-fill" id="autoProgressFill"></div></div>
-<div style="text-align:center;font-size:11px;color:var(--muted);padding:2px" id="autoMsg"></div>
-
-<!-- ═══ Controls ═══ -->
-<div class="controls">
-  <button class="btn btn-primary" onclick="tapCapture()">📸 صوّر</button>
-  <button class="btn btn-secondary" id="flashBtn" onclick="toggleFlash()">🔦 فلاش</button>
-  <button class="btn btn-secondary" onclick="toggleCamera()">📷 كاميرا</button>
-  <label class="btn btn-secondary" style="margin:0">
-    📁 ملف
-    <input type="file" accept="image/*" onchange="handleFileUpload(event)" style="display:none">
-  </label>
+<!-- Manual Input -->
+<div class="manual">
+  <input type="text" id="manualCode" placeholder="اكتب الكود يدوي...">
+  <button onclick="searchManual()">🔍</button>
 </div>
 
-<!-- ═══ Manual Code Input ═══ -->
-<div class="manual-row">
-  <input type="text" id="manualCode" placeholder="اكتب الكود يدوي..." autocomplete="off">
-  <button class="btn btn-primary" onclick="searchManual()">🔍</button>
+<!-- Status -->
+<div class="status" id="statusText">جاهز</div>
+
+<!-- Loading -->
+<div class="loading" id="loading"><div class="spinner"></div><div style="margin-top:8px">جاري التحليل...</div></div>
+
+<!-- Error -->
+<div class="error" id="errorMsg"></div>
+
+<!-- Result Card -->
+<div class="result" id="resultCard">
+  <div class="code" id="resCode"></div>
+  <div class="time" id="resTime"></div>
+  <div id="resBadge"></div>
+  <div class="storage"><span id="resStorage">?</span> <span>GB</span></div>
+  <div class="chips" id="resChips"></div>
 </div>
 
-<!-- ═══ Loading Card ═══ -->
-<div class="loading-card" id="loadingCard">
-  <div class="loading-spinner"></div>
-  <div class="loading-steps">
-    <div class="step" id="step1">🔤 قراءة الكود...</div>
-    <div class="step" id="step2">📊 بحث في الجداول...</div>
-    <div class="step" id="step3">🤖 تحليل Gemini...</div>
-  </div>
+<!-- Confirm / Correct -->
+<div class="actions" id="confirmActions">
+  <button class="btn btn-sec" onclick="confirmOk()" style="background:#1a3a1a;color:#2ea043">✅ صح</button>
+  <button class="btn btn-sec" onclick="showCorrection()" style="background:#3a1a1a;color:#f85149">❌ غلط</button>
 </div>
-
-<!-- ═══ Error Card ═══ -->
-<div class="error-card" id="errorCard"></div>
-
-<!-- ═══ Result Card ═══ -->
-<div class="result-card" id="resultCard">
-  <div class="result-code" id="detectedCode"></div>
-  <div class="result-time" id="resultTime"></div>
-  <div id="typeBadge"></div>
-  <div class="storage-num" id="storageNum"></div>
-  <div class="storage-unit">GB</div>
-  <div id="ramBga"></div>
-</div>
-
-<!-- ═══ Confirm/Correct ═══ -->
-<div class="confirm-actions" id="confirmActions">
-  <button class="btn btn-primary" onclick="confirmResult()">✅ صح</button>
-  <button class="btn btn-danger" onclick="showCorrectionForm()">❌ غلط</button>
-</div>
-
-<div class="correction-form" id="correctionForm">
+<div class="correction" id="correctionForm">
   <select id="correctStorage">
     <option value="">-- المساحة الصح --</option>
     <option>8</option><option>16</option><option>32</option><option>64</option>
     <option>128</option><option>256</option><option>512</option>
   </select>
   <select id="correctType">
-    <option value="عادي">⚪ عادي</option>
-    <option value="زجاجي">🔵 زجاجي</option>
+    <option value="عادي">عادي</option>
+    <option value="زجاجي">زجاجي</option>
   </select>
   <input type="text" id="correctRam" placeholder="الرام (اختياري)">
-  <button class="btn btn-primary" onclick="submitCorrection()" style="width:100%">💾 حفظ التصحيح</button>
+  <button class="btn btn-main" onclick="submitCorrection()" style="margin-top:6px;width:100%">💾 حفظ</button>
 </div>
 
-<!-- ═══ Chat ═══ -->
-<div class="chat-section">
+<!-- Chat -->
+<div class="chat-box">
   <div class="chat-msgs" id="chatMsgs"></div>
-  <div class="chat-input-row">
-    <input type="text" id="chatInput" placeholder="اسأل عن كود أو علّمني..." onkeypress="if(event.key==='Enter')sendChat()">
+  <div class="chat-row">
+    <input type="text" id="chatInput" placeholder="اسأل عن كود...">
     <button onclick="sendChat()">إرسال</button>
   </div>
 </div>
 
-<!-- ═══ Training Section ═══ -->
-<div style="padding:10px 16px">
-  <button class="btn btn-secondary" onclick="toggleTraining()" style="width:100%">🎓 صور التدريب (<span id="trainCount">0</span>)</button>
+<!-- Training -->
+<div class="train-toggle"><button onclick="toggleTraining()" id="trainBtn">🎓 صور التدريب (0)</button></div>
+<div class="train-panel" id="trainPanel">
+  <div style="font-size:12px;color:#8b949e;margin-bottom:6px">ارفع صور أمثلة عشان جيمناي يتعلم يفكك أحسن</div>
+  <input type="text" id="trainLabel" placeholder="وصف (مثلاً: زجاجي Samsung)">
+  <label class="btn btn-sec" style="margin:6px 0;width:100%;justify-content:center">📷 ارفع صورة<input type="file" accept="image/*" id="trainFile"></label>
+  <button class="btn btn-sec" onclick="uploadTraining()" style="width:100%">⬆️ رفع</button>
+  <div class="train-list" id="trainList"></div>
+  <button class="btn btn-sec" onclick="clearTraining()" style="width:100%;margin-top:4px;color:#f85149">🗑️ مسح الكل</button>
 </div>
-<div id="trainingPanel" style="display:none;padding:10px 16px;background:var(--card);border-top:1px solid var(--border)">
-  <p style="font-size:12px;color:var(--muted);margin-bottom:8px">ارفع صور أمثلة عشان جيمناي يتعلم يفكك أحسن (مرة واحدة كل جلسة)</p>
-  <div id="trainList" style="margin-bottom:8px"></div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap">
-    <input type="text" id="trainLabel" placeholder="وصف الصورة (مثلا: زجاجي Samsung)" style="flex:1;background:var(--glass);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Cairo',sans-serif;padding:8px;font-size:13px;min-width:150px">
-    <label class="btn btn-primary" style="margin:0;cursor:pointer">
-      📷 ارفع صورة
-      <input type="file" accept="image/*" onchange="uploadTraining(event)" style="display:none">
-    </label>
-    <button class="btn btn-danger" onclick="clearTraining()">🗑️ مسح الكل</button>
-  </div>
-</div>
-
-<!-- ═══ Stats ═══ -->
-<div class="stats-bar">
-  <div class="stat-item"><div class="stat-num" id="statTotal">0</div>إجمالي</div>
-  <div class="stat-item"><div class="stat-num" id="statSuccess">0</div>نجاح</div>
-  <div class="stat-item"><div class="stat-num" id="statCache">-</div>كاش</div>
 </div>
 
 <canvas id="canvas" style="display:none"></canvas>
 
 <script>
-// ╔══════════════════════════════════════════════════════════════════╗
-// ║        Memory Chip Identifier — PWA Frontend v1.0               ║
-// ╚══════════════════════════════════════════════════════════════════╝
-
-// ─── Databases (duplicated for local fast-path) ───
-var NORMAL_DB = {"8+1D2":["TP64A8","TP65A8","US-B410","7U-B309","18C-8G","28B-8G","28C-8G","JY938","JWB11","221640","231624","KMK7X000VM-B314","08EMCP08-EL2BV100","08EMCP08-EL2CV100"],"8+1":["KMF720012M-B214","KMQ72000SM-B316","KMFNX0012M-B214","KMFN10012M-B214","KMQN1000SM-B316","NW006A-B316","N10012A-B214","N60012B-B214","KMFN60012M-B214","KMQ7X000SA-B419","KMQNW000SM-B419","KMQN6000SM-B419","H9TQ64A8GTACUR-KUM","H9TQ64A8GTCCUR-KUM","H9TQ64A8GTMCUR-KUM","H9TQ64A8GTDCUR-KUM","H9TQ65A8GTACUR-KUM","TYD0GH121661RA","TYD0GH121644RA","TYD0GH121651RA","TYD0GH221664RA","221644","221651","08EMCP08-NL3DT227","08EMCP08-EL3DT527","08EMCP08-EL3DT227","08EMCP08-EL3BS100","08EMCP08-EL3BT100","08EMCP08-EL3BT227","08EMCP08-EL3BV100","08EMCP08-EL2DM327","08EMCP08-EL3CV100","08EMCP08-EL3AV100","SD9DS28K-8G","28J-8G","JWA60","JY941","JZ099","JY974"],"8+1.5":["KMQN10006B","KMQN10006M","H9TQ64AAETAC-KUM","H9TQ64AAETMC-KUM"],"8+2":["KMQN10013M","KMR7X0001M","KMRNW0001M","H9TQ64ABJTMCUR"],"16+1\u6b63\u7801":["KMF310012M","KMF820012M","KMQ82000SM","KMQ8X000SA","KMFE10012M","KMFE60012M"],"16+1\u6742\u7801":["E60012A-B214","KMQ31000SM","H9TQ17A8GTMCUR","TYD0HH231632RC","TYD0HH121662RA","16EMCP08-EL3BT527","16EMCP08-NL3DT527","16EMCP08-EL3CV100","16EMCP08-NL3DTB28","SDADB48K-16G","JZ089"],"16+1.5":["KMQ310006A","KMQ310006B","KMQ31006M","KMQE6006M","H9TQ17AAETACUR"],"16+2":["KMQ310013B","KMQE60013B","KMQ310013M-B419","KMQ820013M","KMR310001M","KMR820001M","KMR8X0001A","KMR8X0001M","KMQE10013M","KMQE60013M-B419","H9TQ17ABJTACUR","H9TQ17ABJTBCUR","H9TQ17ABJTCCUR","H9TQ17ABJTMCUR","H9TQ18ABJTMCUR","037-125BT","024-125BT","038-107BT","041-107BT","040-107BT","038-125BT"],"16+2\u6742\u7801":["82001M-B612","TYEOHH221657RA","TYE0HH221668RA","TYE0HH231659RA","JY932","JY952","JZ008","JY977","JY950","JZ024","JZ094","16EMCP16-EL3CV100","16EMCP16-ML3BM500","16EMCP16-EL3DT527","16EMCP16-3GM610","16EMCP16-3GTB28","16EMCP16-3ETD28","16ENCP16-3DTB28","16EMCP16-3DTA28","16EMCP16-NL3E527","SDADF4AP-16G","SDADL2AP-16G"],"16+3":["KMR31000BA","KMR31000BM","KMRE1000BM","KMGE6001BM","H9TQ17ADFTACUR","H9TQ17ADFTBCUR","H9TQ17ADFTMCUR","JZ011","JZ006","3100BB-B614"],"32+2":["KMQX60013A","KMQ4Z0013M","KMQX10013M","KMQX60013M","H9TQ26ABJTACUR","H9TQ26ABJTBCUR","H9TQ26ABJTMCUR","KMQD60013M","H9TQ27ABJTMCUR","072-107BT"],"32+2\u6742\u7801":["KMQ210013M","KMR4Z0001A","KMR4Z0001M","KMR4Z00MM","TYE0IH231658RA","JZ025","JZ002","JZ007","JZ012","JZ014"],"32+2D4":["H9HP27ABKMMDAR","H9HP27ABUMMDAR","KM4X6001KM"],"32+3":["KMGX6001BA","KMR21000BM","KMRX1000BM","KMGX6001BM","KMGD6001BM","H9TQ26ADFTACUR","H9TQ26ADFTBCUR","H9TQ27ADFTMCUR","JZ013","JZ050","SDADL28P-32G","JZ004","046-107BT","046-125BT","045-107BT","073-107BT"],"32+3\u6742\u7801":["H9TQ26ADFTMCUR","JZ050"],"32+3D4":["KMDD60018M","H9HP27ADAMADAR","KMDX10018M","KMDX60018M","H9AG8GDMNB*113","JZ018","JZ083","018-125BT","084-075BT"],"32+4":["KMRX10014M","KMRX60014M","KMRD60014M","H9TQ26ACLTMCUR"],"32+4D4":["X10016A-B617","X10016M-B619","TQ27AC","H9HP27ACVUMDARKLM","H9HP26ACVUMDARKLM","KMDX6001DM"],"64+3":["KMRC1000BM","KMGP6001BM","H9TQ52ADFTMCUR","KMGP6001BA","PA094"],"64+3D4":["KM5H80018M","KMDP60018M","JZ090","HP52AD","HQ53AD","JZ185"],"64+4":["KMRC10014M","KMRH60014M","KMRH60014A","KMRP60014M","KMRP60014A","H9TQ52ACLTMCUR","H9TQ53ACLTMCUR","JZ049","JZ128","069-107BT","096-107BT","PA107-107BT","PA070"],"64+4D4":["H9HP52ACPMMDARKMM","H9HP52ACPMADARKMM","KMDH6001DM","KMDH6001DA","KMDP6001DA","KMDP6001DB","KMWC10016M","H9AG9G5ANB","HP53AC","JZ186","JZ481","JZ484","JZ109","JZ053","022-18BT","PG023","022-062BT","022-053BT","090-053BT","PA112","183-053BT"],"64+4UMCP":["HQ52AC","H9HQ53ACPMMDAR","H9HQ54ACPMMDAR","JZ177","KM5H7001DM","KM5P9001DM","KM5P8001DM","KM5C7001DM","KMDC6001DM"],"64+6":["KM3H6001CM","KM3H6001CA","H9HP52AECMMDBRKMM","H9HP52AECMMDARKMM","H9HQ53AECMMDARKEM","H9HQ54AECMMDAR","KMWC10017M","JZ052","086-075BT","PA087"],"64+6UMCP":["UMCP 4DR-64G","KM3P6001CM","KM2H7001CM","KM2P9001CM","JZ168"],"128+4UMCP":["KM5L9001DM","KM5V7001DM","HQ15AC","HQ16AC","JZ150","JZ385"],"128+4":["KMRV50014M","KMWV50017M","KMDV6001DB","KMDV6001DM","KMDV6001DA","JZ103","JZ187","JZ182","HP16AC","093-053BT","092-053BT","PA110","092-153BT","110-053BT"],"128+6":["KM3V6001CM","H9HP16AECMMDARKMM","V6001CA-B708","V6001CB-B708","JZ188","JZ105","JZ114","PA124","PA104","2Q7001CM-BB01"],"128+6UMCP":["KM2V7001CM","KM2V8001CM","H9HQ16AECMMDARKEM","H9HQ15AECMADAR","H9HQ15AECMBDAR","KM5V8001DM","KM2L9001CM","JZ100","JZ151","JZ386"],"128+8":["JZ387","JZ152","JZ266","H9HQ16AFAMMDAR","H9HQ15AFAMBDRA","H9HQ15AFAMADRA","V7001JM-B810","KM8V7001JM-B810","KM8V7001JA-B810","KM8V8001JM-B810","KM8V9001JM-B810","KMWV6001JM-B810","KM8L9001JM-B810"],"128+8D5":["KMAG9001PM"],"256+6":["H9HQ22AECMMDARKEM","KM2B8001CM","H9HQ21AECMZDAR"],"256+8":["H9QT1G6DN6","KM8B8001JM","KMF800JM","H9HQ21AFAMADARKEM","H9HQ21AFAMZDARKEM","H9HQ22AFAMMDARKEM","KM8F9001JM","JZ171","JZ396"],"256+8D5":["KMAS9001PM","JZ361"],"256+12":["KM8F8001MM","H9QT1GGBN6","H9QT1GGDN6"],"256+12D5":["JZ303","KMJS9001RM"]};
-var EMMC_DB = {"16":["KLMAG4FE4B-B002","KLMAG4FEAB-B002","KLMAG2GEAC-B001","KLMAG2GEAC-B002","KLMAG2GEAC-B031","KLMAG2WEMB-B031","KLMAG2WEPD-B031","KLMAG4FEAC-B002","KLMAG2GEND-B032","KLMAG2GEND-B031","KLMAG1JENB-B041","KLMAG1JENB-B031","KLMAGIJETD-B041","THGBMAG7A2JBAIR","THGBMSG7A2JBAIR","THGBMSG7A4JBA4W","THGBMAG7A4JBA4R","THGBMBG7C2KBAIL","THGBMBG7D4KBAIW","THGBMFG7C2LBAIL","THGBMHG7C2LBAIL","THGBMFG7CILBAIL","H26M54002EMR","H26M54003EMR","H26M52103FMR","H26M52104FMR","H26M52208FPR","SDIN7DU2-16G","SDIN7DP4-16G","SDINSDE2-16G","SDINSDE4-16G","SDIN9DS2-16G","SDIN9DW4-16G"],"32":["KLMBG8FE4B-B001","KLMBG4GEAC-B001","KLMBG4WEBC-B031","KLMBG2JENB-B041","KLMBG2JETD-B041","KLMBG4GEND-B031","KLUBG4GIBD-E0B2","KLUBG4G1BD-E0B1","KLUBG4GICE-B0B1","KLUBG4WEBD-B031","KLUBG4GIBE-E0B1","THGBMSG8A4JBAIR","THGBMSG8ASJBA4X","THGBM9G8T4KBAR","THGBMAG8A4JBA4R","THGBMBG8D4KBAIR","THGBMFG8C4LBAIR","THGBMHG8C4LBAIR","THGBMF7G8K4LBATR","THGBMHG8C2LBAIL","THGBMFG8C2LBAL","H26M64001EMR","H26M64103EMR","H26M64002EMR","H26M64020SEMR","H28U62301AMR","SDINBDA4-32G","SDIN7DP4-32G","SDIN7DU2-32G","SDINSDE4-32G","SDIN9DW4-32G","SDINADF4-32G","SDINBDG4-32G"],"64":["KLMCGAFE4B-B001","KLMCG8GEAC-B001","KLMCG8GEND-B031","KLMCG8WEBC-B031","KLMCG8WEBD-B031","KLMCG4JENB-B041","KLMCG2KCTA-B041","KLMCG2KETM-B041","KLMCG2UCTA-B041","KLMCG4JENB-B043","KLUCGSG1BD-EOBI","KLUCGSG1BD-E0B2","KLUCG4J1BB-E0B1","KLUCG4J1CB-B0B1","KLUCG1JIED-B0CI","KLUCG2K1EA-B0CI","KLUCG2UCTA-B041","KLUCG4J1EB-B0B1","KLUCG4JIED-B0C1","THGAF4G9N4LBAIR","THGAFSG9T43BAIR","THGBMGG9T4LBAIG","THGBMHG9C4LBAIR","THGBF7G9L4LBATR","THGLF2G9JSLBATC","THGLF2G9JSLBATR","H26M78103CCR","H26M74002EMR","H26M78208CMR","H26M74002HMR","H28U74301AMR","H28M7820SCMR","H28U74303AMR","H28S7Q302BMR","SDIN9DW5-64G","SDIN8DE4-64G","SDINADF4-64G","SDINBDA4-64G","SDINBDD4-64G","SDINDDH4-64G","JZO23","JZ023","JZ160","JZ495"],"128":["KLMDG8JENB-B041","KLMDG4UCTA-B041","KLMDG4UCTB-B041","KLMDG4UERM-B041","KLMDG8JEUD-B04P","KLMDG8JEUD-B04Q","KLMDG8VERF-B041","KLMDGAWEBD-B031","KLUDG8J1CB-C0B1","KLUDG8J1CR-B0B1","KLUDG8VIEE-B0CI","KLUDGAGIBD-E0B1","KLUDG4UIEA-B0CI","KLUDG4U1FB-B0C1","KLUDG4UIYB-BOCP","KLUDG4UIYB-BOCQ","KLUDG4UHDB-B2D1","KLUDG4UHDB-B2E1","KLUDG4UHDC-BOE1","KLUDGSJIZD-BOCP","KLUDGSJIZD-BOCQ","THGAF4TONSLBAIR","THGAFSTOT43BAIR","THGAFBTOT43BABS","THGBF7T0L8LBATA","THGBMFTOCSLBAIG","THGBMHTOCSLBAIG","THGAMRTOT43BAIR","H28U88301AMR","H26T87001CMR","H28S8D301DMR","HNST0SBZGKX015N","HNSTOSDEHKX073N","HNST061ZGKX012N","HNST062EHKX039N","SDINADF4-128G","SDINBDA4-128G","SDINBDA6-128G","SDINDDH4-128G","SDINEDK4-128G","SDINFDO4-128G","JZ144","JZ156","JZ159","JZ244","JZ341","JZ380","JZ496"],"256":["KLMEGSUCTA-B041","KLUEG8U1YB-BOCP","KLUEG8UIYB-BOCQ","KLUEG8UHDB-C2E1","KLUEG8UHDC-BOEI","KLUEGAJIZD-BOCP","KLUEGAJIZD-BOCQ","KLUEGSUIEA-B0CI","THGAFSTITS3BAIR","THGAFBTITS3BABS","THGJFATITS4BAIR","THGJFCTIT84BAIC","H28S9Q301CMR","H28S9X401CMR","HNSTISBZGKX016N","HNSTISDEHKX075N","HNST161ZGKX013N","HN8T162EHKX04IN","SDINBDA4-256G","SDINBDA6-256G","SDINDDH4-256G","SDINEDK4-256G","SDINFDO4-256G","SDINFEO2-256G","JZ147","JZ242","JZ345","JZ369"],"512":["KLUFGSRIEM-B0C1","KLUFGSRHDA-B2E1","KLUFGSRHDB-BOE1","KLUFGSRIEM-BOC1","THGJFAT2T84BAIR","THGJFCT2T84BAIC","HNST2SDEHKX077N","SDINEDK4-512G","SDINFDO4-512G"]};
-var MICRON_DB = {"8":["JWA60","JW687"],"16":["JW788"],"32":["JZ132"],"64":["JZ023","JZ160","JZ495","JZ075","JZ178","JZ196","JZ528"],"128":["JZ057","JZ144","JZ156","JZ064","JZ380","JZ341","JZ417","JZ447","JZ413"],"256":["JZ067","JZ161","JZ369","JZ418","JZ449","JZ348","JZ242","JZ459"],"512":["JZ347"]};
-var SAMSUNG_RAM_MAP = {'S':'1','2':'1','6':'1.5','K':'2','1':'2','3':'2','A':'3','B':'3','8':'3','D':'4','4':'6','C':'6','J':'8','P':'8','L':'10','M':'12'};
-
-// ─── State ───
-var stream = null, imageCapture = null, bestCameraId = null;
-var cameraActive = false, flashActive = false;
-var isAnalyzing = false, autoInterval = null, autoProgress = 0, prevFrame = null;
-var currentCode = '', lastParsed = null, lastBase64 = '';
-var sessionCount = 0, successCount = 0;
-var cloudLearned = [];
+// ══════════════════════════════════════════
+// State
+// ══════════════════════════════════════════
+var stream = null, imageCapture = null, cameraActive = false, flashActive = false;
+var bestCameraId = null, prevFrame = null, autoInterval = null, autoProgress = 0;
+var isAnalyzing = false, currentCode = '', lastParsed = null;
 var chatHistory = [];
-var unknownCodes = [];
-var currentDisplayStorage = '';
-var ledAnimTimer = null, ledAnimIdx = 0;
+var sessionId = 'sid_' + Date.now();
+var SAMSUNG_RAM_MAP = {S:'1','2':'1','6':'1.5',K:'2','1':'2','3':'2',A:'3',B:'3','8':'3',D:'4','4':'6',C:'6',J:'8',P:'8',L:'10',M:'12'};
 
-// ─── LED System ───
-var LED_MAP = {
-  'vision_db':'led-vision','vision_lookup':'led-vision',
-  'db':'led-db','db_exact':'led-db',
-  'gemini_direct':'led-gemini','gemini':'led-gemini',
-  'rag_selector':'led-rag',
-  'db_fuzzy':'led-fuzzy','lookup_fuzzy':'led-fuzzy','db_errorfix':'led-fuzzy',
-  'cache':'led-cache',
-  'pattern':'led-pattern',
-  'correction':'led-correction',
-  'failed':'led-failed','no_code':'led-failed','partial':'led-failed'
-};
-
-function resetLEDs() {
-  document.querySelectorAll('.led').forEach(function(el) {
-    el.classList.remove('active','scanning');
-  });
-}
-function lightLED(step) {
-  var id = LED_MAP[step];
-  if (id) {
-    var el = document.getElementById(id);
-    if (el) { el.classList.add('active'); el.classList.remove('scanning'); }
-  }
-}
-function startLEDAnimation() {
-  ledAnimIdx = 0;
-  var leds = document.querySelectorAll('.led');
-  leds.forEach(function(l){ l.classList.add('scanning'); });
-}
-function stopLEDAnimation() {
-  document.querySelectorAll('.led').forEach(function(l){ l.classList.remove('scanning'); });
-}
-
-// ─── Scan Bar ───
-function startScanBar() { document.getElementById('scanLine').classList.add('active'); }
-function stopScanBar(success) { document.getElementById('scanLine').classList.remove('active'); }
-
-// ─── Show/Hide helpers ───
-function showLoading(show) {
-  document.getElementById('loadingCard').classList.toggle('show', show);
-  if (show) {
-    ['step1','step2','step3'].forEach(function(id) {
-      document.getElementById(id).className = 'step';
-    });
-    setTimeout(function(){ document.getElementById('step1').className='step active'; }, 100);
-    setTimeout(function(){ document.getElementById('step1').className='step done'; document.getElementById('step2').className='step active'; }, 800);
-    setTimeout(function(){ document.getElementById('step2').className='step done'; document.getElementById('step3').className='step active'; }, 1600);
-  }
-}
-function showResult(show) { document.getElementById('resultCard').classList.toggle('show', show); }
-function showError(msg) {
-  var el = document.getElementById('errorCard');
-  if (msg) { el.textContent = msg; el.classList.add('show'); }
-  else { el.classList.remove('show'); }
-}
-
-// ─── Chat ───
-function addChatMsg(from, text, role) {
-  var msgs = document.getElementById('chatMsgs');
-  var div = document.createElement('div');
-  div.className = 'chat-msg ' + (role || 'bot');
-  div.textContent = text;
-  msgs.appendChild(div);
-  msgs.scrollTop = msgs.scrollHeight;
-}
-
-// ─── Camera System (exact same settings) ───
+// ══════════════════════════════════════════
+// Camera (exact settings from old app)
+// ══════════════════════════════════════════
 async function findBestCamera() {
   if (bestCameraId) return bestCameraId;
   try {
-    var temp = await navigator.mediaDevices.getUserMedia({ video: true });
-    temp.getTracks().forEach(function(t){ t.stop(); });
+    var temp = await navigator.mediaDevices.getUserMedia({video:true});
+    temp.getTracks().forEach(function(t){t.stop();});
     var devices = await navigator.mediaDevices.enumerateDevices();
-    var cams = devices.filter(function(d){ return d.kind === 'videoinput'; });
+    var cams = devices.filter(function(d){return d.kind==='videoinput';});
     if (cams.length <= 1) return null;
     var best = null, bestRes = 0;
-    for (var i = 0; i < cams.length; i++) {
+    for (var i=0; i<cams.length; i++) {
       try {
-        var ts = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: cams[i].deviceId } } });
+        var ts = await navigator.mediaDevices.getUserMedia({video:{deviceId:{exact:cams[i].deviceId}}});
         var track = ts.getVideoTracks()[0];
         var caps = track.getCapabilities ? track.getCapabilities() : {};
         var maxW = (caps.width && caps.width.max) ? caps.width.max : 0;
         if (maxW > bestRes) { bestRes = maxW; best = cams[i].deviceId; }
-        ts.getTracks().forEach(function(t){ t.stop(); });
+        ts.getTracks().forEach(function(t){t.stop();});
       } catch(e) {}
     }
-    if (best) { bestCameraId = best; console.log('Best camera: ' + bestRes + 'px'); }
+    if (best) { bestCameraId = best; }
     return best;
   } catch(e) { return null; }
 }
@@ -376,7 +223,7 @@ async function startCamera() {
   if (camId) {
     try {
       stream = await navigator.mediaDevices.getUserMedia({
-        video: { deviceId:{exact:camId}, width:{ideal:3840}, height:{ideal:2160}, focusMode:'continuous' }, audio: false
+        video:{deviceId:{exact:camId},width:{ideal:3840},height:{ideal:2160},focusMode:'continuous'}, audio:false
       });
     } catch(e) { stream = null; }
   }
@@ -384,7 +231,7 @@ async function startCamera() {
   if (!stream) {
     try {
       stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode:{exact:'environment'}, width:{ideal:3840}, height:{ideal:2160}, focusMode:'continuous' }, audio: false
+        video:{facingMode:{exact:'environment'},width:{ideal:3840},height:{ideal:2160},focusMode:'continuous'}, audio:false
       });
     } catch(e) { stream = null; }
   }
@@ -392,20 +239,15 @@ async function startCamera() {
   if (!stream) {
     try {
       stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode:'environment', width:{ideal:1920}, height:{ideal:1080} }, audio: false
+        video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}, audio:false
       });
     } catch(e) { stream = null; }
   }
-  if (!stream) { addChatMsg('المساعد','لا يمكن فتح الكاميرا. استخدم زر "ملف" لاختيار صورة.','bot'); return false; }
+  if (!stream) { setStatus('لا يمكن فتح الكاميرا — استخدم زر ملف'); return false; }
   var video = document.getElementById('video');
-  if (video) {
-    video.srcObject = stream;
-    video.muted = true;
-    await new Promise(function(resolve) {
-      video.onloadedmetadata = function() { video.play().then(resolve).catch(resolve); };
-      setTimeout(resolve, 3000);
-    });
-  }
+  video.srcObject = stream;
+  video.muted = true;
+  await new Promise(function(r){ video.onloadedmetadata = function(){ video.play().then(r).catch(r); }; setTimeout(r,3000); });
   // ImageCapture
   try {
     if ('ImageCapture' in window) {
@@ -415,33 +257,33 @@ async function startCamera() {
       imageCapture = ic;
     }
   } catch(e) { imageCapture = null; }
-  try {
-    var s = stream.getVideoTracks()[0].getSettings();
-    console.log('Camera: ' + s.width + 'x' + s.height);
-  } catch(e) {}
   cameraActive = true;
   startQualityMonitor();
+  setAutoMsg('وجّه الكاميرا على شريحة الذاكرة');
   return true;
 }
 
-function stopCamera() {
-  stopAutoAnalysis();
-  if (stream) { stream.getTracks().forEach(function(t){t.stop();}); stream = null; }
-  imageCapture = null;
-  cameraActive = false;
+async function toggleFlash() {
+  if (!stream) return;
+  flashActive = !flashActive;
+  try {
+    var track = stream.getVideoTracks()[0];
+    await track.applyConstraints({advanced:[{torch:flashActive}]});
+    document.getElementById('flashBtn').textContent = flashActive ? '🔦 ON' : '🔦 فلاش';
+  } catch(e) { flashActive = false; }
 }
 
-// ─── Quality Monitoring ───
+// ══════════════════════════════════════════
+// Quality Monitoring
+// ══════════════════════════════════════════
 function startQualityMonitor() {
   if (autoInterval) clearInterval(autoInterval);
   autoProgress = 0; prevFrame = null;
-  updateAutoUI(0, 'وجّه الكاميرا على شريحة الذاكرة');
   autoInterval = setInterval(analyzeFrame, 800);
 }
-function startAutoAnalysis() { startQualityMonitor(); }
-function stopAutoAnalysis() {
+function stopQualityMonitor() {
   if (autoInterval) { clearInterval(autoInterval); autoInterval = null; }
-  autoProgress = 0; prevFrame = null; updateAutoUI(0, '');
+  autoProgress = 0; prevFrame = null;
 }
 
 function analyzeFrame() {
@@ -480,50 +322,39 @@ function analyzeFrame() {
   var brightness=0;
   for (var i=0; i<data.length; i+=4) brightness += (data[i]+data[i+1]+data[i+2])/3;
   brightness /= (data.length/4);
-  var qSharp = sharp>15?'good':sharp>8?'warn':'bad';
-  var qStable = stability>70?'good':stability>40?'warn':'bad';
-  var qLight = (brightness>60&&brightness<220)?'good':brightness>30?'warn':'bad';
-  document.getElementById('qSharp').className = 'q-dot '+qSharp;
-  document.getElementById('qStable').className = 'q-dot '+qStable;
-  document.getElementById('qLight').className = 'q-dot '+qLight;
-  var allGood = qSharp==='good' && qStable==='good' && qLight==='good';
+  var qS = sharp>15?'good':sharp>8?'warn':'bad';
+  var qT = stability>70?'good':stability>40?'warn':'bad';
+  var qL = (brightness>60&&brightness<220)?'good':brightness>30?'warn':'bad';
+  document.getElementById('qSharp').className = 'q-dot '+qS;
+  document.getElementById('qStable').className = 'q-dot '+qT;
+  document.getElementById('qLight').className = 'q-dot '+qL;
+  var allGood = qS==='good' && qT==='good' && qL==='good';
   if (allGood) autoProgress = Math.min(100, autoProgress+3);
   else autoProgress = Math.max(0, autoProgress-5);
-  var msg = 'وجّه الكاميرا';
-  if (qLight==='bad') msg='الإضاءة ضعيفة';
-  else if (qSharp==='bad') msg='قرّب أكتر';
-  else if (qStable==='bad') msg='ثبّت إيدك';
-  else if (allGood && autoProgress<100) msg='ممتاز! ثبّت... '+autoProgress+'%';
-  else if (allGood) msg='جاهز! اضغط صوّر';
-  updateAutoUI(autoProgress, msg);
-}
-function updateAutoUI(progress, msg) {
-  var fill = document.getElementById('autoProgressFill');
-  if (fill) fill.style.width = progress+'%';
-  var el = document.getElementById('autoMsg');
-  if (el) el.textContent = msg||'';
+  document.getElementById('progressFill').style.width = autoProgress+'%';
+  if (qL==='bad') setAutoMsg('الإضاءة ضعيفة');
+  else if (qS==='bad') setAutoMsg('قرّب أكتر');
+  else if (qT==='bad') setAutoMsg('ثبّت إيدك');
+  else if (allGood && autoProgress<100) setAutoMsg('ممتاز! ثبّت... '+autoProgress+'%');
+  else if (allGood) setAutoMsg('جاهز! اضغط صوّر');
 }
 
-// ─── Capture ───
+// ══════════════════════════════════════════
+// Capture & Crop
+// ══════════════════════════════════════════
+function cropToFocusBox(srcCanvas, vw, vh) {
+  var bw = vw * 0.25, bh = bw / 1.2;
+  var bx = (vw - bw) / 2, by = (vh - bh) / 2;
+  var c = document.createElement('canvas');
+  c.width = bw; c.height = bh;
+  c.getContext('2d').drawImage(srcCanvas, bx, by, bw, bh, 0, 0, bw, bh);
+  return c;
+}
+
 function tapCapture() {
   if (!stream || !cameraActive || isAnalyzing) return;
-  stopAutoAnalysis();
-  var video = document.getElementById('video');
-  if (video && video.srcObject) video.srcObject.getTracks().forEach(function(t){ t.enabled=false; });
-  var wrapper = document.getElementById('cameraWrapper');
-  if (wrapper) { wrapper.style.opacity='0.3'; setTimeout(function(){wrapper.style.opacity='1';},150); }
+  stopQualityMonitor();
   captureAndAnalyze();
-}
-
-function cropToFocusBox(sourceCanvas, videoW, videoH) {
-  var boxW = videoW * 0.25;
-  var boxH = boxW / 1.2;
-  var boxX = (videoW - boxW) / 2;
-  var boxY = (videoH - boxH) / 2;
-  var cropCanvas = document.createElement('canvas');
-  cropCanvas.width = boxW; cropCanvas.height = boxH;
-  cropCanvas.getContext('2d').drawImage(sourceCanvas, boxX, boxY, boxW, boxH, 0, 0, boxW, boxH);
-  return cropCanvas;
 }
 
 async function captureAndAnalyze() {
@@ -533,7 +364,6 @@ async function captureAndAnalyze() {
   var ctx = canvas.getContext('2d');
   var w = video.videoWidth || 1280, h = video.videoHeight || 720;
   canvas.width = w; canvas.height = h;
-  // ImageCapture path (full res)
   if (imageCapture) {
     try {
       var blob = await imageCapture.takePhoto();
@@ -542,129 +372,147 @@ async function captureAndAnalyze() {
         canvas.width = img.width; canvas.height = img.height;
         ctx.drawImage(img, 0, 0);
         var cropped = cropToFocusBox(canvas, img.width, img.height);
-        var base64 = cropped.toDataURL('image/jpeg', 1.0);
-        analyzeImage(base64.split(',')[1], base64);
+        sendToGemini(cropped.toDataURL('image/jpeg',1.0).split(',')[1]);
       };
       img.src = URL.createObjectURL(blob);
       return;
-    } catch(e) { console.log('ImageCapture fallback to Canvas'); }
+    } catch(e) {}
   }
-  // Canvas fallback
   ctx.drawImage(video, 0, 0, w, h);
   var cropped = cropToFocusBox(canvas, w, h);
-  var base64 = cropped.toDataURL('image/jpeg', 1.0);
-  analyzeImage(base64.split(',')[1], base64);
+  sendToGemini(cropped.toDataURL('image/jpeg',1.0).split(',')[1]);
 }
 
-function unfreezeCamera() {
-  var video = document.getElementById('video');
-  if (video && video.srcObject) video.srcObject.getTracks().forEach(function(t){ t.enabled=true; });
-}
-
-// ─── Flash ───
-async function toggleFlash() {
-  if (!stream) return;
-  flashActive = !flashActive;
-  try {
-    var track = stream.getVideoTracks()[0];
-    await track.applyConstraints({ advanced: [{ torch: flashActive }] });
-    document.getElementById('flashBtn').textContent = flashActive ? '🔦 ON' : '🔦 فلاش';
-  } catch(e) { flashActive = false; }
-}
-
-// ─── Camera Toggle ───
-async function toggleCamera() {
-  if (cameraActive) { stopCamera(); addChatMsg('المساعد','الكاميرا اتقفلت','bot'); }
-  else { var ok = await startCamera(); if (ok) addChatMsg('المساعد','الكاميرا شغالة','bot'); }
-}
-
-// ─── File Upload ───
-function handleFileUpload(event) {
+function handleFile(event) {
   var file = event.target.files[0];
   if (!file) return;
   var reader = new FileReader();
-  reader.onload = function(e) {
-    var base64Full = e.target.result;
-    analyzeImage(base64Full.split(',')[1], base64Full);
-  };
+  reader.onload = function(e) { sendToGemini(e.target.result.split(',')[1]); };
   reader.readAsDataURL(file);
 }
 
-// ─── Local DB Search (frontend fast-path) ───
-function searchInDB(code) {
-  if (!code) return null;
+// ══════════════════════════════════════════
+// Send to Gemini (simple — no racing)
+// ══════════════════════════════════════════
+async function sendToGemini(base64) {
+  if (isAnalyzing) return;
+  isAnalyzing = true;
+  showLoading(true); hideResult(); hideError();
+  hideActions();
+  setStatus('جاري التحليل...');
+  var startTime = Date.now();
+  try {
+    var res = await fetch('/api/analyze', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({imageBase64:base64, sessionId:sessionId})
+    });
+    var data = await res.json();
+    var elapsed = ((Date.now()-startTime)/1000).toFixed(1);
+    if (data.error) { showError(data.error); setStatus('خطأ'); }
+    else if (!data.code || data.code === 'NOT_FOUND') { showError('مش لاقي شريحة ذاكرة — جرب تاني أو اكتب الكود يدوي'); setStatus('مش لاقي'); }
+    else {
+      currentCode = data.code; lastParsed = data;
+      document.getElementById('manualCode').value = currentCode;
+      displayResult(data);
+      setStatus((data.step||'gemini') + ' (' + elapsed + 's)');
+      showActions();
+    }
+  } catch(e) { showError('خطأ في الاتصال — جرب تاني'); setStatus('خطأ'); }
+  showLoading(false);
+  isAnalyzing = false;
+  if (stream && cameraActive) setTimeout(startQualityMonitor, 1500);
+}
+
+// ══════════════════════════════════════════
+// Manual Search
+// ══════════════════════════════════════════
+function searchManual() {
+  var code = document.getElementById('manualCode').value.trim();
+  if (!code || code.length < 3) return;
+  currentCode = code.toUpperCase();
+  // Try local DB first
+  var local = localSearch(currentCode);
+  if (local) {
+    lastParsed = {code:currentCode, storage:local.storage, type:local.type, ram:local.ram||extractRam(currentCode), company:local.company||detectCompany(currentCode)};
+    displayResult(lastParsed);
+    showActions();
+    setStatus('DB محلي');
+    return;
+  }
+  // Fallback: server lookup
+  fetch('/api/lookup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:currentCode})})
+  .then(function(r){return r.json();}).then(function(d){
+    if (d.found) {
+      lastParsed = d;
+      displayResult(d);
+      showActions();
+      setStatus('DB سيرفر');
+    } else {
+      showError('كود مش في القاعدة — جرب صوّر الشريحة');
+      setStatus('مش لاقي');
+    }
+  });
+}
+
+// ══════════════════════════════════════════
+// Local DB + Helpers
+// ══════════════════════════════════════════
+var NORMAL_DB = {"8+1D2":["TP64A8","TP65A8","US-B410","7U-B309","18C-8G","28B-8G","28C-8G","JY938","JWB11","221640","231624","KMK7X000VM-B314","08EMCP08-EL2BV100","08EMCP08-EL2CV100"],"8+1":["KMF720012M-B214","KMQ72000SM-B316","KMFNX0012M-B214","KMFN10012M-B214","KMQN1000SM-B316","NW006A-B316","N10012A-B214","N60012B-B214","KMFN60012M-B214","KMQ7X000SA-B419","KMQNW000SM-B419","KMQN6000SM-B419","H9TQ64A8GTACUR-KUM","H9TQ64A8GTCCUR-KUM","H9TQ64A8GTMCUR-KUM","H9TQ64A8GTDCUR-KUM","H9TQ65A8GTACUR-KUM","TYD0GH121661RA","TYD0GH121644RA","TYD0GH121651RA","TYD0GH221664RA","221644","221651","08EMCP08-NL3DT227","08EMCP08-EL3DT527","08EMCP08-EL3DT227","08EMCP08-EL3BS100","08EMCP08-EL3BT100","08EMCP08-EL3BT227","08EMCP08-EL3BV100","08EMCP08-EL2DM327","08EMCP08-EL3CV100","08EMCP08-EL3AV100","SD9DS28K-8G","28J-8G","JWA60","JY941","JZ099","JY974"],"8+1.5":["KMQN10006B","KMQN10006M","H9TQ64AAETAC-KUM","H9TQ64AAETMC-KUM"],"8+2":["KMQN10013M","KMR7X0001M","KMRNW0001M","H9TQ64ABJTMCUR"],"16+1\u6b63\u7801":["KMF310012M","KMF820012M","KMQ82000SM","KMQ8X000SA","KMFE10012M","KMFE60012M"],"16+1\u6742\u7801":["E60012A-B214","KMQ31000SM","H9TQ17A8GTMCUR","TYD0HH231632RC","TYD0HH121662RA","16EMCP08-EL3BT527","16EMCP08-NL3DT527","16EMCP08-EL3CV100","16EMCP08-NL3DTB28","SDADB48K-16G","JZ089"],"16+1.5":["KMQ310006A","KMQ310006B","KMQ31006M","KMQE6006M","H9TQ17AAETACUR"],"16+2":["KMQ310013B","KMQE60013B","KMQ310013M-B419","KMQ820013M","KMR310001M","KMR820001M","KMR8X0001A","KMR8X0001M","KMQE10013M","KMQE60013M-B419","H9TQ17ABJTACUR","H9TQ17ABJTBCUR","H9TQ17ABJTCCUR","H9TQ17ABJTMCUR","H9TQ18ABJTMCUR","037-125BT","024-125BT","038-107BT","041-107BT","040-107BT","038-125BT"],"16+2\u6742\u7801":["82001M-B612","TYEOHH221657RA","TYE0HH221668RA","TYE0HH231659RA","JY932","JY952","JZ008","JY977","JY950","JZ024","JZ094","16EMCP16-EL3CV100","16EMCP16-ML3BM500","16EMCP16-EL3DT527","16EMCP16-3GM610","16EMCP16-3GTB28","16EMCP16-3ETD28","16ENCP16-3DTB28","16EMCP16-3DTA28","16EMCP16-NL3E527","SDADF4AP-16G","SDADL2AP-16G"],"16+3":["KMR31000BA","KMR31000BM","KMRE1000BM","KMGE6001BM","H9TQ17ADFTACUR","H9TQ17ADFTBCUR","H9TQ17ADFTMCUR","JZ011","JZ006","3100BB-B614"],"32+2":["KMQX60013A","KMQ4Z0013M","KMQX10013M","KMQX60013M","H9TQ26ABJTACUR","H9TQ26ABJTBCUR","H9TQ26ABJTMCUR","KMQD60013M","H9TQ27ABJTMCUR","072-107BT"],"32+2\u6742\u7801":["KMQ210013M","KMR4Z0001A","KMR4Z0001M","KMR4Z00MM","TYE0IH231658RA","JZ025","JZ002","JZ007","JZ012","JZ014"],"32+2D4":["H9HP27ABKMMDAR","H9HP27ABUMMDAR","KM4X6001KM"],"32+3":["KMGX6001BA","KMR21000BM","KMRX1000BM","KMGX6001BM","KMGD6001BM","H9TQ26ADFTACUR","H9TQ26ADFTBCUR","H9TQ27ADFTMCUR","JZ013","JZ050","SDADL28P-32G","JZ004","046-107BT","046-125BT","045-107BT","073-107BT"],"32+3\u6742\u7801":["H9TQ26ADFTMCUR","JZ050"],"32+3D4":["KMDD60018M","H9HP27ADAMADAR","KMDX10018M","KMDX60018M","H9AG8GDMNB*113","JZ018","JZ083","018-125BT","084-075BT"],"32+4":["KMRX10014M","KMRX60014M","KMRD60014M","H9TQ26ACLTMCUR"],"32+4D4":["X10016A-B617","X10016M-B619","TQ27AC","H9HP27ACVUMDARKLM","H9HP26ACVUMDARKLM","KMDX6001DM"],"64+3":["KMRC1000BM","KMGP6001BM","H9TQ52ADFTMCUR","KMGP6001BA","PA094"],"64+3D4":["KM5H80018M","KMDP60018M","JZ090","HP52AD","HQ53AD","JZ185"],"64+4":["KMRC10014M","KMRH60014M","KMRH60014A","KMRP60014M","KMRP60014A","H9TQ52ACLTMCUR","H9TQ53ACLTMCUR","JZ049","JZ128","069-107BT","096-107BT","PA107-107BT","PA070"],"64+4D4":["H9HP52ACPMMDARKMM","H9HP52ACPMADARKMM","KMDH6001DM","KMDH6001DA","KMDP6001DA","KMDP6001DB","KMWC10016M","H9AG9G5ANB","HP53AC","JZ186","JZ481","JZ484","JZ109","JZ053","022-18BT","PG023","022-062BT","022-053BT","090-053BT","PA112","183-053BT"],"64+4UMCP":["HQ52AC","H9HQ53ACPMMDAR","H9HQ54ACPMMDAR","JZ177","KM5H7001DM","KM5P9001DM","KM5P8001DM","KM5C7001DM","KMDC6001DM"],"64+6":["KM3H6001CM","KM3H6001CA","H9HP52AECMMDBRKMM","H9HP52AECMMDARKMM","H9HQ53AECMMDARKEM","H9HQ54AECMMDAR","KMWC10017M","JZ052","086-075BT","PA087"],"64+6UMCP":["UMCP 4DR-64G","KM3P6001CM","KM2H7001CM","KM2P9001CM","JZ168"],"128+4UMCP":["KM5L9001DM","KM5V7001DM","HQ15AC","HQ16AC","JZ150","JZ385"],"128+4":["KMRV50014M","KMWV50017M","KMDV6001DB","KMDV6001DM","KMDV6001DA","JZ103","JZ187","JZ182","HP16AC","093-053BT","092-053BT","PA110","092-153BT","110-053BT"],"128+6":["KM3V6001CM","H9HP16AECMMDARKMM","V6001CA-B708","V6001CB-B708","JZ188","JZ105","JZ114","PA124","PA104","2Q7001CM-BB01"],"128+6UMCP":["KM2V7001CM","KM2V8001CM","H9HQ16AECMMDARKEM","H9HQ15AECMADAR","H9HQ15AECMBDAR","KM5V8001DM","KM2L9001CM","JZ100","JZ151","JZ386"],"128+8":["JZ387","JZ152","JZ266","H9HQ16AFAMMDAR","H9HQ15AFAMBDRA","H9HQ15AFAMADRA","V7001JM-B810","KM8V7001JM-B810","KM8V7001JA-B810","KM8V8001JM-B810","KM8V9001JM-B810","KMWV6001JM-B810","KM8L9001JM-B810"],"128+8D5":["KMAG9001PM"],"256+6":["H9HQ22AECMMDARKEM","KM2B8001CM","H9HQ21AECMZDAR"],"256+8":["H9QT1G6DN6","KM8B8001JM","KMF800JM","H9HQ21AFAMADARKEM","H9HQ21AFAMZDARKEM","H9HQ22AFAMMDARKEM","KM8F9001JM","JZ171","JZ396"],"256+8D5":["KMAS9001PM","JZ361"],"256+12":["KM8F8001MM","H9QT1GGBN6","H9QT1GGDN6"],"256+12D5":["JZ303","KMJS9001RM"]};
+var EMMC_DB = {"16":["KLMAG4FE4B-B002","KLMAG4FEAB-B002","KLMAG2GEAC-B001","KLMAG2GEAC-B002","KLMAG2GEAC-B031","KLMAG2WEMB-B031","KLMAG2WEPD-B031","KLMAG4FEAC-B002","KLMAG2GEND-B032","KLMAG2GEND-B031","KLMAG1JENB-B041","KLMAG1JENB-B031","KLMAGIJETD-B041","THGBMAG7A2JBAIR","THGBMSG7A2JBAIR","THGBMSG7A4JBA4W","THGBMAG7A4JBA4R","THGBMBG7C2KBAIL","THGBMBG7D4KBAIW","THGBMFG7C2LBAIL","THGBMHG7C2LBAIL","THGBMFG7CILBAIL","H26M54002EMR","H26M54003EMR","H26M52103FMR","H26M52104FMR","H26M52208FPR","SDIN7DU2-16G","SDIN7DP4-16G","SDINSDE2-16G","SDINSDE4-16G","SDIN9DS2-16G","SDIN9DW4-16G"],"32":["KLMBG8FE4B-B001","KLMBG4GEAC-B001","KLMBG4WEBC-B031","KLMBG2JENB-B041","KLMBG2JETD-B041","KLMBG4GEND-B031","KLUBG4GIBD-E0B2","KLUBG4G1BD-E0B1","KLUBG4GICE-B0B1","KLUBG4WEBD-B031","KLUBG4GIBE-E0B1","THGBMSG8A4JBAIR","THGBMSG8ASJBA4X","THGBM9G8T4KBAR","THGBMAG8A4JBA4R","THGBMBG8D4KBAIR","THGBMFG8C4LBAIR","THGBMHG8C4LBAIR","THGBMF7G8K4LBATR","THGBMHG8C2LBAIL","THGBMFG8C2LBAL","H26M64001EMR","H26M64103EMR","H26M64002EMR","H26M64020SEMR","H28U62301AMR","SDINBDA4-32G","SDIN7DP4-32G","SDIN7DU2-32G","SDINSDE4-32G","SDIN9DW4-32G","SDINADF4-32G","SDINBDG4-32G"],"64":["KLMCGAFE4B-B001","KLMCG8GEAC-B001","KLMCG8GEND-B031","KLMCG8WEBC-B031","KLMCG8WEBD-B031","KLMCG4JENB-B041","KLMCG2KCTA-B041","KLMCG2KETM-B041","KLMCG2UCTA-B041","KLMCG4JENB-B043","KLUCGSG1BD-EOBI","KLUCGSG1BD-E0B2","KLUCG4J1BB-E0B1","KLUCG4J1CB-B0B1","KLUCG1JIED-B0CI","KLUCG2K1EA-B0CI","KLUCG2UCTA-B041","KLUCG4J1EB-B0B1","KLUCG4JIED-B0C1","THGAF4G9N4LBAIR","THGAFSG9T43BAIR","THGBMGG9T4LBAIG","THGBMHG9C4LBAIR","THGBF7G9L4LBATR","THGLF2G9JSLBATC","THGLF2G9JSLBATR","H26M78103CCR","H26M74002EMR","H26M78208CMR","H26M74002HMR","H28U74301AMR","H28M7820SCMR","H28U74303AMR","H28S7Q302BMR","SDIN9DW5-64G","SDIN8DE4-64G","SDINADF4-64G","SDINBDA4-64G","SDINBDD4-64G","SDINDDH4-64G","JZO23","JZ023","JZ160","JZ495"],"128":["KLMDG8JENB-B041","KLMDG4UCTA-B041","KLMDG4UCTB-B041","KLMDG4UERM-B041","KLMDG8JEUD-B04P","KLMDG8JEUD-B04Q","KLMDG8VERF-B041","KLMDGAWEBD-B031","KLUDG8J1CB-C0B1","KLUDG8J1CR-B0B1","KLUDG8VIEE-B0CI","KLUDGAGIBD-E0B1","KLUDG4UIEA-B0CI","KLUDG4U1FB-B0C1","KLUDG4UIYB-BOCP","KLUDG4UIYB-BOCQ","KLUDG4UHDB-B2D1","KLUDG4UHDB-B2E1","KLUDG4UHDC-BOE1","KLUDGSJIZD-BOCP","KLUDGSJIZD-BOCQ","THGAF4TONSLBAIR","THGAFSTOT43BAIR","THGAFBTOT43BABS","THGBF7T0L8LBATA","THGBMFTOCSLBAIG","THGBMHTOCSLBAIG","THGAMRTOT43BAIR","H28U88301AMR","H26T87001CMR","H28S8D301DMR","HNST0SBZGKX015N","HNSTOSDEHKX073N","HNST061ZGKX012N","HNST062EHKX039N","SDINADF4-128G","SDINBDA4-128G","SDINBDA6-128G","SDINDDH4-128G","SDINEDK4-128G","SDINFDO4-128G","JZ144","JZ156","JZ159","JZ244","JZ341","JZ380","JZ496"],"256":["KLMEGSUCTA-B041","KLUEG8U1YB-BOCP","KLUEG8UIYB-BOCQ","KLUEG8UHDB-C2E1","KLUEG8UHDC-BOEI","KLUEGAJIZD-BOCP","KLUEGAJIZD-BOCQ","KLUEGSUIEA-B0CI","THGAFSTITS3BAIR","THGAFBTITS3BABS","THGJFATITS4BAIR","THGJFCTIT84BAIC","H28S9Q301CMR","H28S9X401CMR","HNSTISBZGKX016N","HNSTISDEHKX075N","HNST161ZGKX013N","HN8T162EHKX04IN","SDINBDA4-256G","SDINBDA6-256G","SDINDDH4-256G","SDINEDK4-256G","SDINFDO4-256G","SDINFEO2-256G","JZ147","JZ242","JZ345","JZ369"],"512":["KLUFGSRIEM-B0C1","KLUFGSRHDA-B2E1","KLUFGSRHDB-BOE1","KLUFGSRIEM-BOC1","THGJFAT2T84BAIR","THGJFCT2T84BAIC","HNST2SDEHKX077N","SDINEDK4-512G","SDINFDO4-512G"]};
+var MICRON_DB = {"8":["JWA60","JW687"],"16":["JW788"],"32":["JZ132"],"64":["JZ023","JZ160","JZ495","JZ075","JZ178","JZ196","JZ528"],"128":["JZ057","JZ144","JZ156","JZ064","JZ380","JZ341","JZ417","JZ447","JZ413"],"256":["JZ067","JZ161","JZ369","JZ418","JZ449","JZ348","JZ242","JZ459"],"512":["JZ347"]};
+
+function localSearch(code) {
   var u = code.toUpperCase().trim();
-  // NORMAL_DB
   for (var cap in NORMAL_DB) {
-    var codes = NORMAL_DB[cap];
-    for (var i=0; i<codes.length; i++) {
-      if (u === codes[i].toUpperCase() || u.startsWith(codes[i].toUpperCase().split('-')[0])) {
-        var parts = cap.split('+');
-        return { storage: parts[0], type: 'عادي', ram: parts[1] ? parts[1].replace(/D[0-9]|正码|杂码|UMCP/g,'').trim() : null };
+    for (var i=0; i<NORMAL_DB[cap].length; i++) {
+      if (u === NORMAL_DB[cap][i].toUpperCase() || u.startsWith(NORMAL_DB[cap][i].toUpperCase().split('-')[0])) {
+        var p = cap.split('+');
+        return {storage:p[0], type:'عادي', ram:p[1]?p[1].replace(/D[0-9]/g,'').trim():null, company:detectCompany(u)};
       }
     }
   }
-  // EMMC_DB
   for (var size in EMMC_DB) {
-    var codes = EMMC_DB[size];
-    for (var i=0; i<codes.length; i++) {
-      if (u === codes[i].toUpperCase() || u.startsWith(codes[i].toUpperCase().split('-')[0])) return { storage: size, type: 'زجاجي' };
+    for (var i=0; i<EMMC_DB[size].length; i++) {
+      if (u === EMMC_DB[size][i].toUpperCase() || u.startsWith(EMMC_DB[size][i].toUpperCase().split('-')[0])) return {storage:size, type:'زجاجي', company:detectCompany(u)};
     }
   }
-  // MICRON_DB
   for (var size in MICRON_DB) {
-    var codes = MICRON_DB[size];
-    for (var i=0; i<codes.length; i++) {
-      if (u === codes[i].toUpperCase()) return { storage: size, type: 'زجاجي' };
+    for (var i=0; i<MICRON_DB[size].length; i++) {
+      if (u === MICRON_DB[size][i].toUpperCase()) return {storage:size, type:'زجاجي', company:'Micron'};
     }
   }
   // Shortcuts
-  var sMap = {'N':'8','E':'16','X':'32','D':'32','C':'64','H':'64','P':'64','G':'128','V':'128','F':'256','S':'256'};
+  var sMap = {N:'8',E:'16',X:'32',D:'32',C:'64',H:'64',P:'64',G:'128',V:'128',F:'256',S:'256'};
   if (u.startsWith('KM') && !u.startsWith('KLM') && !u.startsWith('KLU')) {
     var m = u.match(/([NEXDCHPGVFS])(000|100|200|600|700|800|900)/);
-    if (m && sMap[m[1]]) return { storage: sMap[m[1]], type: 'عادي', fromShortcut: true };
+    if (m && sMap[m[1]]) return {storage:sMap[m[1]], type:'عادي', company:'Samsung'};
   }
   if (u.startsWith('KLM') || u.startsWith('KLU')) {
-    var eMap = {'AG':'16','BG':'32','CG':'64','DG':'128','EG':'256','FG':'512'};
-    for (var k in eMap) { if (u.includes(k)) return { storage: eMap[k], type: 'زجاجي', fromShortcut: true }; }
+    var eMap = {AG:'16',BG:'32',CG:'64',DG:'128',EG:'256',FG:'512'};
+    for (var k in eMap) { if (u.includes(k)) return {storage:eMap[k], type:'زجاجي', company:'Samsung'}; }
   }
   if (u.startsWith('H9')) {
-    var hMap = {'17':'16','18':'16','19':'16','26':'32','27':'32','52':'64','53':'64','16':'128'};
+    var hMap = {'17':'16','18':'16','26':'32','27':'32','52':'64','53':'64','16':'128'};
     var num = u.substring(4,6);
-    if (hMap[num]) return { storage: hMap[num], type: 'عادي', fromShortcut: true };
+    if (hMap[num]) return {storage:hMap[num], type:'عادي', company:'SK Hynix'};
   }
+  if (u.startsWith('H26') || u.startsWith('H28') || u.startsWith('HN')) return {type:'زجاجي', company:'SK Hynix'};
   if (u.startsWith('THG')) {
-    var tMap = {'G7':'16','G8':'32','G9':'64','T0':'128','T1':'256','T2':'512'};
+    var tMap = {G7:'16',G8:'32',G9:'64',T0:'128',T1:'256',T2:'512'};
     var key = u.substring(6,8);
-    if (tMap[key]) return { storage: tMap[key], type: 'زجاجي', fromShortcut: true };
+    if (tMap[key]) return {storage:tMap[key], type:'زجاجي', company:'Toshiba'};
   }
   if (u.startsWith('SDIN') || u.startsWith('SDAD')) {
-    var m = u.match(/(\d+)G/);
-    if (m) return { storage: m[1], type: 'زجاجي', fromShortcut: true };
+    var gm = u.match(/(\d+)G/);
+    if (gm) return {storage:gm[1], type:'زجاجي', company:'SanDisk'};
   }
-  if (u.startsWith('YMEC') && u.length>=5) {
-    var yMap = {'6':'32','G':'32','7':'64','8':'128','B':'128','9':'256'};
-    if (yMap[u[4]]) return { storage: yMap[u[4]], type: 'زجاجي', fromShortcut: true };
-  }
-  // General
-  var gm = u.match(/([NEXDCHPGVFS])(000|100|200|600|700|800|900|6001|7001|8001|9001)/i);
-  if (gm && sMap[gm[1].toUpperCase()]) return { storage: sMap[gm[1].toUpperCase()], type: 'عادي', fromShortcut: true };
   return null;
 }
 
-function isValidCode(code) {
-  if (!code || code.length < 3) return false;
-  var u = code.toUpperCase().trim();
-  if (/^(KM|KL[MU]|H9|H2[68]|HN|THG|SDI|SDA|J[WZ]|YMEC|TY|08EM|16E[MN]|PA)/.test(u)) return true;
-  if (/^[0-9]{6,}$/.test(u)) return true;
-  if (u.length >= 8 && /[A-Z]/.test(u) && /[0-9]/.test(u)) return true;
-  return false;
-}
-function detectCompanyLocal(code) {
-  if (!code) return '';
-  var u = code.toUpperCase();
+function detectCompany(code) {
+  var u = (code||'').toUpperCase();
   if (/^KM|^KLM|^KLU/.test(u)) return 'Samsung';
-  if (/^H9|^H2[6-8]|^HN/.test(u)) return 'SK Hynix';
+  if (/^H9|^H2[68]|^HN/.test(u)) return 'SK Hynix';
   if (/^THG/.test(u)) return 'Toshiba';
   if (/^SDI|^SDA/.test(u)) return 'SanDisk';
   if (/^J[WZ]/.test(u)) return 'Micron';
@@ -672,235 +520,142 @@ function detectCompanyLocal(code) {
   if (/^(08|16)EM/.test(u)) return 'UNIC';
   return '';
 }
-function ocrCleanup(text) {
-  if (!text) return '';
-  return text.toUpperCase().replace(/[^A-Z0-9\-]/g, '');
-}
-function extractSamsungRam(code) {
+
+function extractRam(code) {
   if (!code) return null;
-  var mainPart = code.split('-')[0];
-  if (mainPart.length < 3) return null;
-  var ch = mainPart[mainPart.length-2].toUpperCase();
-  return SAMSUNG_RAM_MAP[ch] || null;
-}
-
-// ─── Display Result ───
-function displayResult(code, found, company) {
-  document.getElementById('detectedCode').textContent = code;
-  document.getElementById('resultTime').textContent = new Date().toLocaleTimeString('ar');
-  if (found) {
-    var storage = found.storage || '?';
-    currentDisplayStorage = storage;
-    var isGlass = found.type === 'زجاجي';
-    document.getElementById('typeBadge').innerHTML = '<div class="type-badge '+(isGlass?'glass':'normal')+'">'+(isGlass?'زجاجي':'عادي')+'</div>';
-    document.getElementById('storageNum').textContent = storage;
-    var ramHtml = '';
-    if (found.ram) ramHtml = '<div class="info-chip">RAM <strong>'+found.ram+' GB</strong></div>';
-    else { var sr = extractSamsungRam(code); if (sr) ramHtml = '<div class="info-chip">RAM <strong>'+sr+' GB</strong></div>'; }
-    if (company) ramHtml += ' <div class="info-chip">'+company+'</div>';
-    document.getElementById('ramBga').innerHTML = ramHtml;
-  } else {
-    document.getElementById('typeBadge').innerHTML = '<div class="type-badge normal">كود جديد</div>';
-    document.getElementById('storageNum').textContent = '?';
-    document.getElementById('ramBga').innerHTML = '';
+  var u = code.toUpperCase();
+  if (u.startsWith('KM') && !u.startsWith('KLM') && !u.startsWith('KLU')) {
+    var main = u.split('-')[0];
+    if (main.length >= 3) { var ch = main[main.length-2]; if (SAMSUNG_RAM_MAP[ch]) return SAMSUNG_RAM_MAP[ch]; }
   }
-  showResult(true);
-}
-
-// ─── Analyze Image (Hybrid Racing) ───
-async function analyzeImage(base64, previewSrc) {
-  if (isAnalyzing) return;
-  isAnalyzing = true; lastBase64 = base64;
-  resetLEDs(); startLEDAnimation(); startScanBar();
-  showLoading(true); showResult(false); showError(false);
-  document.getElementById('confirmActions').style.display = 'none';
-  document.getElementById('correctionForm').style.display = 'none';
-
-  var raceWon = false, startTime = Date.now(), fastResult = null, geminiResult = null;
-  var abortOCR = new AbortController(), abortGemini = new AbortController();
-
-  function submitWinner(parsed, source) {
-    if (raceWon) return false;
-    raceWon = true;
-    var elapsed = ((Date.now()-startTime)/1000).toFixed(1);
-    var conf = parsed.confidence || 0;
-    try { abortOCR.abort(); } catch(e) {}
-    try { abortGemini.abort(); } catch(e) {}
-    stopLEDAnimation();
-    if (parsed.step) lightLED(parsed.step);
-    lastParsed = parsed; currentCode = parsed.code || '';
-    var manualInput = document.getElementById('manualCode');
-    if (manualInput) manualInput.value = currentCode;
-    if (parsed.storage && parsed.type) {
-      stopScanBar(true); showLoading(false); successCount++;
-      displayResult(currentCode, { storage:parsed.storage, type:parsed.type, ram:parsed.ram||null }, parsed.company||'');
-      document.getElementById('confirmActions').style.display = 'flex';
-      sessionCount++; document.getElementById('sessionCount').textContent = sessionCount;
-      document.getElementById('statTotal').textContent = sessionCount;
-      document.getElementById('statSuccess').textContent = successCount;
-      var dot = document.getElementById('statusDot');
-      var confColor = conf>=90?'#00e676':conf>=70?'#00ff88':'#ffab00';
-      if (dot) { dot.style.background=confColor; dot.style.boxShadow='0 0 10px '+confColor; }
-      document.getElementById('statusText').textContent = source+' ('+elapsed+'s) ['+conf+'%]';
-      addChatMsg('المساعد', currentCode+' - '+parsed.storage+'GB '+parsed.type+(parsed.suggestion?' ('+parsed.suggestion+')':'')+' ['+source+' '+elapsed+'s '+conf+'%]','bot');
-    } else {
-      stopScanBar(false); showLoading(false);
-      displayResult(currentCode, null, parsed.company||'');
-      document.getElementById('correctionForm').style.display = 'block';
-      sessionCount++; document.getElementById('sessionCount').textContent = sessionCount;
-      document.getElementById('statTotal').textContent = sessionCount;
-      addChatMsg('المساعد','كود جديد: '+currentCode+' - اكتب المساحة والنوع','bot');
-    }
-    isAnalyzing = false; unfreezeCamera();
-    if (stream && cameraActive) setTimeout(startAutoAnalysis, 2000);
-    return true;
+  var HYNIX_RAM = {A4:'0.5',A8:'1',AB:'2',AD:'3',AC:'4',AE:'6'};
+  if (u.startsWith('H9')) {
+    var m = u.match(/H9[A-Z]{2}\d{2}([A-Z]{2})/);
+    if (m && HYNIX_RAM[m[1]]) return HYNIX_RAM[m[1]];
   }
-
-  // Path 1: Vision OCR → DB Lookup (FAST)
-  var ocrPromise = (async function() {
-    try {
-      var vRes = await fetch('/api/vision-ocr', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({imageBase64:base64}), signal:abortOCR.signal });
-      if (raceWon) return null;
-      if (!vRes.ok) return null;
-      var vData = await vRes.json();
-      if (raceWon) return null;
-      var ocrText = (vData.text||'').trim();
-      if (!ocrText || ocrText.length<3) return null;
-      var lines = ocrText.split(/[\n\r\s]+/).filter(function(l){return l.length>=3;});
-      lines.unshift(ocrText);
-      for (var li=0; li<lines.length; li++) {
-        if (raceWon) return null;
-        var line = ocrCleanup(lines[li]);
-        if (line.length<4) continue;
-        var localResult = searchInDB(line);
-        if (localResult && localResult.storage && localResult.type) {
-          var result = { code:line, storage:localResult.storage, type:localResult.type, company:detectCompanyLocal(line), ram:localResult.ram||null, step:'vision_db', confidence:93 };
-          fastResult = result;
-          submitWinner(result, 'FAST');
-          return result;
-        }
-      }
-      // Server lookup fallback
-      if (!raceWon && ocrText.length>=4) {
-        var lRes = await fetch('/api/lookup', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({code:ocrText,learnedCodes:cloudLearned,source:'vision'}), signal:abortOCR.signal });
-        if (!raceWon && lRes.ok) {
-          var lData = await lRes.json();
-          if (lData.found && lData.storage && lData.type) {
-            var r2 = { code:lData.code||ocrText, storage:lData.storage, type:lData.type, company:lData.company||'', ram:lData.ram||null, step:'vision_lookup', confidence:91 };
-            fastResult = r2; submitWinner(r2, 'FAST'); return r2;
-          }
-        }
-      }
-      return null;
-    } catch(e) { return null; }
-  })();
-
-  // Path 2: Gemini Vision (background verification)
-  var geminiPromise = (async function() {
-    try {
-      var gRes = await fetch('/api/analyze', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({imageBase64:base64,learnedCodes:cloudLearned}), signal:abortGemini.signal });
-      if (raceWon && fastResult) return null;
-      if (!gRes.ok) { var err={}; try{err=await gRes.json();}catch(e){} return {error:true,data:err}; }
-      var parsed = await gRes.json();
-      if (!parsed.confidence) parsed.confidence = (parsed.storage&&parsed.type)?70:30;
-      if (parsed.code && isValidCode(parsed.code)) {
-        geminiResult = parsed;
-        if (!raceWon && parsed.storage && parsed.type) { submitWinner(parsed,'Gemini'); return parsed; }
-        if (raceWon && fastResult && parsed.storage && parsed.type && parsed.code !== fastResult.code) {
-          addChatMsg('المساعد','Gemini صحح: '+parsed.code+' - '+parsed.storage+'GB '+parsed.type+' (كان '+fastResult.code+')','bot');
-          lastParsed = parsed; currentCode = parsed.code;
-          document.getElementById('manualCode').value = parsed.code;
-          displayResult(parsed.code,{storage:parsed.storage,type:parsed.type,ram:parsed.ram||null},parsed.company);
-        }
-      }
-      return parsed;
-    } catch(e) { return {error:true,data:{error:e.message}}; }
-  })();
-
-  // Wait for both
-  try {
-    await Promise.allSettled([ocrPromise, geminiPromise]);
-    if (!raceWon) {
-      if (geminiResult && !geminiResult.error && geminiResult.code && geminiResult.storage && geminiResult.type) {
-        submitWinner(geminiResult, 'Gemini');
-      } else if (geminiResult && geminiResult.error) {
-        stopLEDAnimation(); lightLED('failed'); stopScanBar(false); showLoading(false);
-        showError((geminiResult.data&&geminiResult.data.error)||'فشل التحليل');
-        isAnalyzing=false; unfreezeCamera();
-      } else {
-        stopLEDAnimation(); lightLED('failed'); stopScanBar(false); showLoading(false);
-        showError('مش شايف كود ذاكرة - صوّر أقرب');
-        addChatMsg('المساعد','مش شايف كود ذاكرة - صوّر أقرب على الشريحة أو اكتب الكود يدوي','bot');
-        isAnalyzing=false; unfreezeCamera();
-      }
-      if (stream && cameraActive) setTimeout(startAutoAnalysis, 2000);
-    }
-  } catch(e) {
-    if (!raceWon) { stopLEDAnimation(); showLoading(false); showError('خطأ في الاتصال'); isAnalyzing=false; unfreezeCamera(); }
-  }
+  return null;
 }
 
-// ─── Manual Search ───
-function searchManual() {
-  var code = document.getElementById('manualCode').value.trim();
-  if (!code) return;
-  currentCode = code;
-  var found = searchInDB(code);
-  if (found) {
-    showError(false); displayResult(code, found, detectCompanyLocal(code));
-    document.getElementById('confirmActions').style.display = 'flex';
-    sessionCount++; document.getElementById('sessionCount').textContent = sessionCount;
-    addChatMsg('المساعد', code+' - '+found.storage+'GB '+found.type+' (بحث يدوي)','bot');
-  } else {
-    // Try server lookup
-    fetch('/api/lookup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:code,learnedCodes:cloudLearned})})
-    .then(function(r){return r.json();})
-    .then(function(d){
-      if (d.found) {
-        displayResult(d.code||code, {storage:d.storage,type:d.type,ram:d.ram}, d.company);
-        document.getElementById('confirmActions').style.display = 'flex';
-        addChatMsg('المساعد', (d.code||code)+' - '+d.storage+'GB '+d.type,'bot');
-      } else {
-        displayResult(code, null, detectCompanyLocal(code));
-        document.getElementById('correctionForm').style.display = 'block';
-        addChatMsg('المساعد','كود جديد: '+code+' - علّمني المساحة والنوع','bot');
-      }
-      sessionCount++; document.getElementById('sessionCount').textContent = sessionCount;
-    });
-  }
+// ══════════════════════════════════════════
+// Display
+// ══════════════════════════════════════════
+function displayResult(d) {
+  document.getElementById('resCode').textContent = d.code || '';
+  document.getElementById('resTime').textContent = new Date().toLocaleTimeString('ar');
+  var isGlass = d.type === 'زجاجي';
+  document.getElementById('resBadge').innerHTML = '<div class="badge '+(isGlass?'glass':'normal')+'">'+(isGlass?'زجاجي':'عادي')+'</div>';
+  document.getElementById('resStorage').textContent = d.storage || '?';
+  var chips = '';
+  var ram = d.ram || extractRam(d.code);
+  if (ram) chips += '<div class="chip">RAM '+ram+' GB</div>';
+  if (d.company) chips += '<div class="chip">'+d.company+'</div>';
+  document.getElementById('resChips').innerHTML = chips;
+  document.getElementById('resultCard').classList.add('show');
 }
 
-// ─── Confirm/Correct ───
-function confirmResult() {
-  if (!lastParsed || !lastParsed.code) return;
-  fetch('/api/confirm',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(lastParsed)})
-  .then(function(r){return r.json();})
-  .then(function(d){ addChatMsg('المساعد','تم التأكيد والحفظ','bot'); });
-  document.getElementById('confirmActions').style.display = 'none';
+// ══════════════════════════════════════════
+// UI Helpers
+// ══════════════════════════════════════════
+function setStatus(t) { document.getElementById('statusText').textContent = t; }
+function setAutoMsg(t) { document.getElementById('autoMsg').textContent = t; }
+function showLoading(s) { document.getElementById('loading').classList.toggle('show',s); }
+function hideResult() { document.getElementById('resultCard').classList.remove('show'); }
+function showError(msg) { var el=document.getElementById('errorMsg'); el.textContent=msg; el.classList.add('show'); }
+function hideError() { document.getElementById('errorMsg').classList.remove('show'); }
+function showActions() { document.getElementById('confirmActions').classList.add('show'); document.getElementById('correctionForm').classList.remove('show'); }
+function hideActions() { document.getElementById('confirmActions').classList.remove('show'); document.getElementById('correctionForm').classList.remove('show'); }
+
+// ══════════════════════════════════════════
+// Confirm / Correct
+// ══════════════════════════════════════════
+function confirmOk() {
+  fetch('/api/confirm',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(lastParsed||{})});
+  hideActions();
+  addChat('المساعد','تم التأكيد ✅');
 }
-function showCorrectionForm() {
-  document.getElementById('confirmActions').style.display = 'none';
-  document.getElementById('correctionForm').style.display = 'block';
+function showCorrection() {
+  document.getElementById('confirmActions').classList.remove('show');
+  document.getElementById('correctionForm').classList.add('show');
 }
 function submitCorrection() {
-  var storage = document.getElementById('correctStorage').value;
-  var type = document.getElementById('correctType').value;
-  var ram = document.getElementById('correctRam').value;
-  if (!storage) { addChatMsg('المساعد','اختار المساحة الأول','bot'); return; }
-  fetch('/api/correct',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-    code:currentCode, wrongResult:lastParsed, correctStorage:storage, correctType:type, correctRam:ram, step:lastParsed?lastParsed.step:'manual'
-  })}).then(function(r){return r.json();}).then(function(d){
-    addChatMsg('المساعد','تم التصحيح: '+currentCode+' = '+storage+'GB '+type,'bot');
-    displayResult(currentCode, {storage:storage,type:type,ram:ram}, detectCompanyLocal(currentCode));
-  });
-  document.getElementById('correctionForm').style.display = 'none';
+  var s = document.getElementById('correctStorage').value;
+  var t = document.getElementById('correctType').value;
+  var r = document.getElementById('correctRam').value;
+  if (!s) { addChat('المساعد','اختار المساحة الأول'); return; }
+  fetch('/api/correct',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:currentCode,correctStorage:s,correctType:t,correctRam:r})});
+  displayResult({code:currentCode,storage:s,type:t,ram:r,company:detectCompany(currentCode)});
+  document.getElementById('correctionForm').classList.remove('show');
+  addChat('المساعد','تم التصحيح: '+currentCode+' = '+s+'GB '+t);
 }
 
-// ─── Chat ───
+// ══════════════════════════════════════════
+// Chat
+// ══════════════════════════════════════════
+function addChat(from, text) {
+  var el = document.getElementById('chatMsgs');
+  el.innerHTML += '<div class="msg"><span class="from">'+from+':</span> '+text+'</div>';
+  el.scrollTop = el.scrollHeight;
+}
 function sendChat() {
   var input = document.getElementById('chatInput');
   var msg = input.value.trim();
   if (!msg) return;
   input.value = '';
-  addChatMsg('أنا', msg, 'user');
-  chatHistory.push({role:'user',text:
+  addChat('أنا', msg);
+  chatHistory.push({role:'user',text:msg});
+  fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg,context:lastParsed,history:chatHistory.slice(-10)})})
+  .then(function(r){return r.json();}).then(function(d){
+    addChat('المساعد', d.reply||'مفيش رد');
+    chatHistory.push({role:'assistant',text:d.reply||''});
+  }).catch(function(){ addChat('المساعد','خطأ — جرب تاني'); });
+}
+
+// ══════════════════════════════════════════
+// Training
+// ══════════════════════════════════════════
+function toggleTraining() {
+  var p = document.getElementById('trainPanel');
+  p.classList.toggle('show');
+  if (p.classList.contains('show')) loadTraining();
+}
+function loadTraining() {
+  fetch('/api/training').then(function(r){return r.json();}).then(function(d){
+    document.getElementById('trainBtn').textContent = '🎓 صور التدريب ('+d.count+')';
+    var list = document.getElementById('trainList');
+    list.innerHTML = '';
+    if (d.images && d.images.length > 0) {
+      d.images.forEach(function(img,i){ list.innerHTML += '<div>'+(i+1)+'. '+(img.label||'بدون وصف')+'</div>'; });
+    } else { list.innerHTML = '<div style="text-align:center;padding:8px">مفيش صور تدريب لسه</div>'; }
+  });
+}
+function uploadTraining() {
+  var file = document.getElementById('trainFile');
+  var label = document.getElementById('trainLabel');
+  if (!file.files || !file.files[0]) { alert('اختار صورة الأول'); return; }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    fetch('/api/training/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({imageBase64:e.target.result,label:label.value.trim()||null})})
+    .then(function(r){return r.json();}).then(function(d){ if(d.success){loadTraining();label.value='';file.value='';alert('تم!');} });
+  };
+  reader.readAsDataURL(file.files[0]);
+}
+function clearTraining() {
+  if (!confirm('متأكد تمسح كل صور التدريب؟')) return;
+  fetch('/api/training/clear',{method:'POST',headers:{'Content-Type':'application/json'}}).then(function(r){return r.json();}).then(function(d){if(d.success)loadTraining();});
+}
+
+// ══════════════════════════════════════════
+// Init
+// ══════════════════════════════════════════
+window.addEventListener('load', function() {
+  startCamera();
+  loadTraining();
+});
+
+// Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(function(){});
+}
+</script>
+</body>
+</html>
