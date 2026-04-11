@@ -6,7 +6,9 @@ var GAI = require('@google/generative-ai');
 
 var app = express();
 var PORT = process.env.PORT || 8080;
-var genAI = new GAI.GoogleGenerativeAI(process.env.GEMINI_KEY || '');
+var API_KEY = process.env.GEMINI_KEY || 'AIzaSyAbHZibxNq1bPUVHxW8aa8GvPAsMgCyzgQ';
+var genAI = new GAI.GoogleGenerativeAI(API_KEY);
+console.log('API Key configured:', API_KEY ? 'yes (' + API_KEY.substring(0,8) + '...)' : 'NO KEY!');
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
@@ -268,6 +270,17 @@ app.post('/api/chat', async function(req, res) {
     console.error('Chat error:', err.message);
     return res.json({ reply: 'Error - try again' });
   }
+});
+
+// Health check
+app.get('/api/health', function(req, res) {
+  res.json({
+    status: 'ok',
+    hasKey: !!API_KEY,
+    keyPrefix: API_KEY ? API_KEY.substring(0, 8) : 'none',
+    promptLen: GEMINI_PROMPT.length,
+    training: trainingImages.length
+  });
 });
 
 // Stub endpoints
