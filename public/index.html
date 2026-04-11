@@ -9,62 +9,45 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Segoe UI',Tahoma,sans-serif;background:#0d1117;color:#e6edf3;min-height:100vh;direction:rtl}
-.app{max-width:480px;margin:0 auto;padding:12px}
-h1{text-align:center;font-size:20px;padding:10px 0;color:#58a6ff}
+.app{max-width:480px;margin:0 auto;padding:8px;display:flex;flex-direction:column;height:100vh}
+h1{text-align:center;font-size:18px;padding:6px 0;color:#58a6ff}
 
 /* Camera */
-.cam-box{position:relative;width:100%;aspect-ratio:4/3;background:#161b22;border-radius:12px;overflow:hidden;margin-bottom:10px}
-.cam-box video{width:100%;height:100%;object-fit:cover}
+.cam-box{position:relative;width:100%;aspect-ratio:4/3;background:#161b22;border-radius:12px;overflow:hidden;flex-shrink:0}
+.cam-box video,.cam-box img{width:100%;height:100%;object-fit:cover}
 .focus-rect{position:absolute;top:50%;left:50%;width:25%;aspect-ratio:1/1.2;transform:translate(-50%,-50%);border:2px solid #58a6ff;border-radius:6px;pointer-events:none}
 
 /* Quality */
-.quality-bar{display:flex;gap:8px;justify-content:center;padding:4px;font-size:12px;color:#8b949e}
-.q-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:4px;background:#555}
+.quality-bar{display:flex;gap:8px;justify-content:center;padding:3px;font-size:11px;color:#8b949e}
+.q-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-left:3px;background:#555}
 .q-dot.good{background:#2ea043}.q-dot.warn{background:#d29922}.q-dot.bad{background:#f85149}
-.auto-msg{text-align:center;font-size:13px;color:#8b949e;min-height:20px;padding:4px}
-.progress-track{height:3px;background:#21262d;border-radius:2px;margin:0 20px 8px}
+.progress-track{height:2px;background:#21262d;border-radius:2px;margin:0 20px 4px}
 .progress-fill{height:100%;background:#58a6ff;border-radius:2px;width:0%;transition:width 0.3s}
 
-/* Buttons */
-.btns{display:flex;gap:8px;justify-content:center;margin-bottom:10px}
-.btn{padding:10px 16px;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-family:inherit}
-.btn-main{background:#238636;color:#fff;font-size:16px;flex:1;max-width:200px}
+/* Buttons row */
+.btns{display:flex;gap:6px;justify-content:center;padding:4px 0;flex-shrink:0}
+.btn{padding:8px 12px;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit}
+.btn-main{background:#238636;color:#fff;flex:1;max-width:160px}
 .btn-sec{background:#21262d;color:#c9d1d9}
+.btn-danger{background:#da3633;color:#fff}
 .btn:active{opacity:0.7}
-.status{text-align:center;font-size:12px;color:#8b949e;margin-bottom:8px}
 
-/* Result Card */
-.result-card{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:16px;margin-bottom:12px;display:none}
-.result-card.show{display:block}
-.result-code{font-size:16px;font-weight:bold;color:#58a6ff;word-break:break-all;margin-bottom:8px}
-.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.result-item{background:#0d1117;border-radius:8px;padding:8px;text-align:center}
-.result-label{font-size:11px;color:#8b949e}
-.result-value{font-size:16px;font-weight:bold;margin-top:2px}
-.result-confidence{text-align:center;font-size:11px;color:#8b949e;margin-top:8px}
-
-/* Tabs */
-.tabs{display:flex;gap:4px;margin-bottom:10px}
-.tab{flex:1;padding:8px;text-align:center;background:#161b22;border:1px solid #30363d;border-radius:8px;color:#8b949e;font-size:13px;cursor:pointer}
-.tab.active{background:#21262d;color:#58a6ff;border-color:#58a6ff}
-
-/* Chat */
-.chat-box{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:10px;margin-bottom:12px;display:none}
-.chat-box.show{display:block}
-.chat-msgs{max-height:250px;overflow-y:auto;margin-bottom:8px}
-.chat-msg{padding:6px 10px;margin-bottom:4px;border-radius:8px;font-size:13px;max-width:85%;word-wrap:break-word}
-.chat-msg.user{background:#238636;color:#fff;margin-left:auto;text-align:left}
-.chat-msg.bot{background:#21262d;color:#e6edf3}
-.chat-input-row{display:flex;gap:6px}
-.chat-input{flex:1;padding:8px;border:1px solid #30363d;border-radius:8px;background:#0d1117;color:#e6edf3;font-size:13px;font-family:inherit}
+/* Chat (always visible) */
+.chat-area{flex:1;display:flex;flex-direction:column;min-height:0;margin-top:4px}
+.chat-msgs{flex:1;overflow-y:auto;padding:4px;display:flex;flex-direction:column;gap:4px}
+.chat-msg{padding:8px 10px;border-radius:10px;font-size:13px;max-width:88%;word-wrap:break-word;line-height:1.5}
+.chat-msg.user{background:#238636;color:#fff;align-self:flex-start}
+.chat-msg.bot{background:#161b22;border:1px solid #30363d;color:#e6edf3;align-self:flex-end}
+.chat-msg.system{background:#0d1117;border:1px solid #58a6ff;color:#58a6ff;align-self:center;text-align:center;font-size:12px}
+.chat-msg.result{background:#161b22;border:1px solid #2ea043;color:#e6edf3;align-self:center;width:100%;text-align:center}
+.result-line{font-size:14px;padding:2px 0}
+.result-code{font-weight:bold;color:#58a6ff;font-size:15px}
+.chat-input-row{display:flex;gap:6px;padding:6px 0;flex-shrink:0}
+.chat-input{flex:1;padding:8px 10px;border:1px solid #30363d;border-radius:8px;background:#161b22;color:#e6edf3;font-size:13px;font-family:inherit}
 .chat-send{padding:8px 14px;background:#238636;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer}
 
-/* Training */
-.train-box{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:10px;margin-bottom:12px;display:none}
-.train-box.show{display:block}
-.train-count{text-align:center;font-size:13px;color:#8b949e;margin-bottom:8px}
-.train-btns{display:flex;gap:6px;justify-content:center}
-.train-btns .btn{font-size:12px;padding:8px 12px}
+/* Training (hidden file input) */
+.train-row{display:flex;gap:4px;align-items:center;justify-content:center;padding:2px 0;font-size:11px;color:#8b949e;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -74,61 +57,41 @@ h1{text-align:center;font-size:20px;padding:10px 0;color:#58a6ff}
 <!-- Camera -->
 <div class="cam-box">
   <video id="video" autoplay playsinline muted></video>
-  <div class="focus-rect"></div>
+  <img id="capturedImg" style="display:none">
+  <div class="focus-rect" id="focusRect"></div>
 </div>
-<div class="quality-bar">
+<div class="quality-bar" id="qualityBar">
   <span>حدة <span class="q-dot" id="qSharp"></span></span>
   <span>ثبات <span class="q-dot" id="qStable"></span></span>
   <span>إضاءة <span class="q-dot" id="qLight"></span></span>
 </div>
 <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
-<div class="auto-msg" id="autoMsg">جاري تشغيل الكاميرا...</div>
 
 <!-- Buttons -->
 <div class="btns">
   <button class="btn btn-main" id="captureBtn" onclick="tapCapture()">📸 صوّر</button>
-  <button class="btn btn-sec" id="flashBtn" onclick="toggleFlash()">🔦 فلاش</button>
+  <button class="btn btn-main" id="nextBtn" onclick="newPhoto()" style="display:none">📸 صورة جديدة</button>
+  <button class="btn btn-sec" id="flashBtn" onclick="toggleFlash()">🔦</button>
 </div>
-<div class="status" id="statusText">جاهز</div>
 
-<!-- Result -->
-<div class="result-card" id="resultCard">
-  <div class="result-code" id="resCode"></div>
-  <div class="result-grid">
-    <div class="result-item"><div class="result-label">السعة</div><div class="result-value" id="resStorage">-</div></div>
-    <div class="result-item"><div class="result-label">النوع</div><div class="result-value" id="resType">-</div></div>
-    <div class="result-item"><div class="result-label">الرام</div><div class="result-value" id="resRam">-</div></div>
-    <div class="result-item"><div class="result-label">الشركة</div><div class="result-value" id="resCompany">-</div></div>
+<!-- Chat (always visible) -->
+<div class="chat-area">
+  <div class="chat-msgs" id="chatMsgs">
+    <div class="chat-msg system">وجّه الكاميرا على شريحة الذاكرة واضغط صوّر</div>
   </div>
-  <div class="result-confidence" id="resConf"></div>
-</div>
-
-<!-- Tabs -->
-<div class="tabs">
-  <div class="tab active" onclick="switchTab('cam')">📸 كاميرا</div>
-  <div class="tab" onclick="switchTab('chat')">💬 شات</div>
-  <div class="tab" onclick="switchTab('train')">🎓 تدريب</div>
-</div>
-
-<!-- Chat -->
-<div class="chat-box" id="chatBox">
-  <div class="chat-msgs" id="chatMsgs"></div>
   <div class="chat-input-row">
-    <input class="chat-input" id="chatInput" placeholder="اكتب رسالة لجيميناي..." onkeydown="if(event.key==='Enter')sendChat()">
+    <input class="chat-input" id="chatInput" placeholder="اكتب لجيميناي..." onkeydown="if(event.key==='Enter')sendChat()">
     <button class="chat-send" onclick="sendChat()">ارسل</button>
   </div>
 </div>
 
 <!-- Training -->
-<div class="train-box" id="trainBox">
-  <div class="train-count" id="trainCount">صور التدريب: 0</div>
-  <div class="train-btns">
-    <button class="btn btn-sec" onclick="uploadTraining()">📤 ارفع صورة تدريب</button>
-    <button class="btn btn-sec" onclick="clearTraining()" style="background:#da3633;color:#fff">🗑 مسح الكل</button>
-  </div>
+<div class="train-row">
+  <span id="trainCount">تدريب: 0</span>
+  <button class="btn btn-sec" style="padding:4px 8px;font-size:11px" onclick="uploadTraining()">📤 ارفع تدريب</button>
+  <button class="btn btn-sec" style="padding:4px 8px;font-size:11px;background:#da3633;color:#fff" onclick="clearTraining()">🗑</button>
   <input type="file" id="trainFile" accept="image/*" style="display:none" onchange="handleTrainFile(event)">
 </div>
-
 </div>
 
 <canvas id="canvas" style="display:none"></canvas>
@@ -142,19 +105,8 @@ var bestCameraId = null, prevFrame = null, autoInterval = null, autoProgress = 0
 var isAnalyzing = false;
 var sessionId = 'sess_' + Date.now();
 var lastResult = null;
+var lastImageBase64 = null;
 var chatHistory = [];
-
-// ══════════════════════════════════════════
-// Tabs
-// ══════════════════════════════════════════
-function switchTab(tab) {
-  var tabs = document.querySelectorAll('.tab');
-  tabs[0].className = 'tab' + (tab==='cam'?' active':'');
-  tabs[1].className = 'tab' + (tab==='chat'?' active':'');
-  tabs[2].className = 'tab' + (tab==='train'?' active':'');
-  document.getElementById('chatBox').className = 'chat-box' + (tab==='chat'?' show':'');
-  document.getElementById('trainBox').className = 'train-box' + (tab==='train'?' show':'');
-}
 
 // ══════════════════════════════════════════
 // Camera (v25 exact settings)
@@ -178,7 +130,7 @@ async function findBestCamera() {
         ts.getTracks().forEach(function(t){t.stop();});
       } catch(e) {}
     }
-    if (best) { bestCameraId = best; }
+    if (best) bestCameraId = best;
     return best;
   } catch(e) { return null; }
 }
@@ -187,109 +139,56 @@ async function startCamera() {
   if (stream) { try { stream.getTracks().forEach(function(t){t.stop();}); } catch(x){} stream = null; }
   imageCapture = null;
   var camId = await findBestCamera();
-  // Attempt 1: exact deviceId + 4K
   if (camId) {
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        video:{deviceId:{exact:camId},width:{ideal:3840},height:{ideal:2160},focusMode:'continuous'}, audio:false
-      });
-    } catch(e) { stream = null; }
+    try { stream = await navigator.mediaDevices.getUserMedia({video:{deviceId:{exact:camId},width:{ideal:3840},height:{ideal:2160},focusMode:'continuous'},audio:false}); } catch(e) { stream = null; }
   }
-  // Attempt 2: facingMode environment + 4K
   if (!stream) {
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        video:{facingMode:{exact:'environment'},width:{ideal:3840},height:{ideal:2160},focusMode:'continuous'}, audio:false
-      });
-    } catch(e) { stream = null; }
+    try { stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{exact:'environment'},width:{ideal:3840},height:{ideal:2160},focusMode:'continuous'},audio:false}); } catch(e) { stream = null; }
   }
-  // Attempt 3: facingMode environment + 1080p
   if (!stream) {
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}, audio:false
-      });
-    } catch(e) { stream = null; }
+    try { stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}},audio:false}); } catch(e) { stream = null; }
   }
-  if (!stream) { document.getElementById('autoMsg').textContent = 'مفيش كاميرا'; return false; }
+  if (!stream) { addMsg('مفيش كاميرا متاحة','system'); return false; }
   var video = document.getElementById('video');
-  video.srcObject = stream;
-  video.muted = true;
+  video.srcObject = stream; video.muted = true;
   await new Promise(function(r){ video.onloadedmetadata = function(){ video.play().then(r).catch(r); }; setTimeout(r,3000); });
-  // ImageCapture
   try {
-    if ('ImageCapture' in window) {
-      var track = stream.getVideoTracks()[0];
-      var ic = new ImageCapture(track);
-      await ic.grabFrame();
-      imageCapture = ic;
-    }
+    if ('ImageCapture' in window) { var track = stream.getVideoTracks()[0]; var ic = new ImageCapture(track); await ic.grabFrame(); imageCapture = ic; }
   } catch(e) { imageCapture = null; }
   cameraActive = true;
   startQualityMonitor();
-  document.getElementById('autoMsg').textContent = 'وجّه الكاميرا على شريحة الذاكرة';
   return true;
 }
 
 async function toggleFlash() {
   if (!stream) return;
   flashActive = !flashActive;
-  try {
-    var track = stream.getVideoTracks()[0];
-    await track.applyConstraints({advanced:[{torch:flashActive}]});
-    document.getElementById('flashBtn').textContent = flashActive ? '🔦 ON' : '🔦 فلاش';
-  } catch(e) { flashActive = false; }
+  try { var track = stream.getVideoTracks()[0]; await track.applyConstraints({advanced:[{torch:flashActive}]}); document.getElementById('flashBtn').textContent = flashActive ? '🔦 ON' : '🔦'; } catch(e) { flashActive = false; }
 }
 
 // ══════════════════════════════════════════
-// Quality Monitoring (v25 exact)
+// Quality Monitoring (v25)
 // ══════════════════════════════════════════
-function startQualityMonitor() {
-  if (autoInterval) clearInterval(autoInterval);
-  autoProgress = 0; prevFrame = null;
-  autoInterval = setInterval(analyzeFrame, 800);
-}
-function stopQualityMonitor() {
-  if (autoInterval) { clearInterval(autoInterval); autoInterval = null; }
-  autoProgress = 0; prevFrame = null;
-}
+function startQualityMonitor() { if (autoInterval) clearInterval(autoInterval); autoProgress = 0; prevFrame = null; autoInterval = setInterval(analyzeFrame, 800); }
+function stopQualityMonitor() { if (autoInterval) { clearInterval(autoInterval); autoInterval = null; } autoProgress = 0; prevFrame = null; }
 
 function analyzeFrame() {
   if (!stream || isAnalyzing) return;
-  var video = document.getElementById('video');
-  var canvas = document.getElementById('canvas');
+  var video = document.getElementById('video'), canvas = document.getElementById('canvas');
   if (!video || !canvas || video.videoWidth === 0) return;
   var ctx = canvas.getContext('2d');
   canvas.width = video.videoWidth; canvas.height = video.videoHeight;
   ctx.drawImage(video, 0, 0);
   var cx = Math.floor(canvas.width*0.25), cy = Math.floor(canvas.height*0.25);
   var cw = Math.floor(canvas.width*0.5), ch = Math.floor(canvas.height*0.5);
-  var imgData = ctx.getImageData(cx, cy, cw, ch);
-  var data = imgData.data;
-  // Sharpness (Laplacian)
+  var imgData = ctx.getImageData(cx, cy, cw, ch), data = imgData.data;
   var sharp = 0;
-  for (var y=1; y<ch-1; y+=4) {
-    for (var x=1; x<cw-1; x+=4) {
-      var idx=(y*cw+x)*4;
-      var center=data[idx], top=data[((y-1)*cw+x)*4]||0, bottom=data[((y+1)*cw+x)*4]||0;
-      var left=data[(y*cw+(x-1))*4]||0, right=data[(y*cw+(x+1))*4]||0;
-      sharp += Math.abs(4*center - top - bottom - left - right);
-    }
-  }
+  for (var y=1; y<ch-1; y+=4) { for (var x=1; x<cw-1; x+=4) { var idx=(y*cw+x)*4; sharp += Math.abs(4*data[idx] - (data[((y-1)*cw+x)*4]||0) - (data[((y+1)*cw+x)*4]||0) - (data[(y*cw+(x-1))*4]||0) - (data[(y*cw+(x+1))*4]||0)); } }
   sharp = Math.min(sharp/1000, 100);
-  // Stability
   var stability = 50;
-  if (prevFrame && prevFrame.length === data.length) {
-    var diff=0;
-    for (var i=0; i<data.length; i+=16) diff += Math.abs(data[i]-prevFrame[i]);
-    diff /= (data.length/16);
-    stability = Math.max(0, 100 - diff*2);
-  }
+  if (prevFrame && prevFrame.length === data.length) { var diff=0; for (var i=0; i<data.length; i+=16) diff += Math.abs(data[i]-prevFrame[i]); diff /= (data.length/16); stability = Math.max(0, 100 - diff*2); }
   prevFrame = new Uint8ClampedArray(data);
-  // Brightness
-  var brightness=0;
-  for (var i=0; i<data.length; i+=4) brightness += (data[i]+data[i+1]+data[i+2])/3;
-  brightness /= (data.length/4);
+  var brightness=0; for (var i=0; i<data.length; i+=4) brightness += (data[i]+data[i+1]+data[i+2])/3; brightness /= (data.length/4);
   var qS = sharp>15?'good':sharp>8?'warn':'bad';
   var qT = stability>70?'good':stability>40?'warn':'bad';
   var qL = (brightness>60&&brightness<220)?'good':brightness>30?'warn':'bad';
@@ -297,18 +196,12 @@ function analyzeFrame() {
   document.getElementById('qStable').className = 'q-dot '+qT;
   document.getElementById('qLight').className = 'q-dot '+qL;
   var allGood = qS==='good' && qT==='good' && qL==='good';
-  if (allGood) autoProgress = Math.min(100, autoProgress+3);
-  else autoProgress = Math.max(0, autoProgress-5);
+  if (allGood) autoProgress = Math.min(100, autoProgress+3); else autoProgress = Math.max(0, autoProgress-5);
   document.getElementById('progressFill').style.width = autoProgress+'%';
-  if (qL==='bad') document.getElementById('autoMsg').textContent = 'الإضاءة ضعيفة';
-  else if (qS==='bad') document.getElementById('autoMsg').textContent = 'قرّب أكتر';
-  else if (qT==='bad') document.getElementById('autoMsg').textContent = 'ثبّت إيدك';
-  else if (allGood && autoProgress<100) document.getElementById('autoMsg').textContent = 'ممتاز! ثبّت... '+autoProgress+'%';
-  else if (allGood) document.getElementById('autoMsg').textContent = 'جاهز! اضغط صوّر';
 }
 
 // ══════════════════════════════════════════
-// Capture + Send to Gemini
+// Capture → Freeze → Gemini replies in chat
 // ══════════════════════════════════════════
 function cropToFocusBox(srcCanvas, vw, vh) {
   var bw = vw * 0.25, bh = bw / 1.2;
@@ -327,17 +220,14 @@ function tapCapture() {
 
 async function captureAndAnalyze() {
   isAnalyzing = true;
-  document.getElementById('captureBtn').textContent = '⏳ جاري التحليل...';
-  document.getElementById('statusText').textContent = 'بصوّر...';
-  var video = document.getElementById('video');
-  var canvas = document.getElementById('canvas');
+  document.getElementById('captureBtn').textContent = '⏳ جاري...';
+  var video = document.getElementById('video'), canvas = document.getElementById('canvas');
   if (!video || !canvas) return;
   var ctx = canvas.getContext('2d');
   var w = video.videoWidth || 1280, h = video.videoHeight || 720;
   canvas.width = w; canvas.height = h;
   var base64 = null;
 
-  // Try ImageCapture first
   if (imageCapture) {
     try {
       var blob = await imageCapture.takePhoto();
@@ -348,63 +238,92 @@ async function captureAndAnalyze() {
       base64 = cropped.toDataURL('image/jpeg',1.0).split(',')[1];
     } catch(e) { base64 = null; }
   }
-  // Fallback: canvas from video
   if (!base64) {
     ctx.drawImage(video, 0, 0, w, h);
     var cropped = cropToFocusBox(canvas, w, h);
     base64 = cropped.toDataURL('image/jpeg',1.0).split(',')[1];
   }
+  lastImageBase64 = base64;
 
-  // Send to Gemini
-  document.getElementById('statusText').textContent = 'بحلل مع جيميناي...';
+  // Freeze image on screen
+  freezeImage(base64);
+  addMsg('بحلل الصورة...', 'system');
+
   try {
     var resp = await fetch('/api/analyze', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
+      method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ imageBase64: base64, sessionId: sessionId })
     });
     var data = await resp.json();
+    // Remove "analyzing" message
+    removeLastSystem();
+
     if (data.error) {
-      document.getElementById('statusText').textContent = data.error;
-      document.getElementById('resultCard').className = 'result-card';
+      addMsg(data.error, 'system');
     } else if (!data.code || data.code === 'NOT_FOUND') {
-      document.getElementById('statusText').textContent = 'مش عارف أقرا الكود — جرّب تاني';
-      document.getElementById('resultCard').className = 'result-card';
+      addMsg('مش عارف أقرا الكود — جرّب تاني أو اسألني', 'bot');
     } else {
-      showResult(data);
+      lastResult = data;
+      // Show result as chat message
+      var txt = '📋 ' + data.code + '\n';
+      txt += '💾 السعة: ' + (data.storage || '?') + 'GB\n';
+      txt += '📦 النوع: ' + (data.type || '?') + '\n';
+      txt += '🏭 الشركة: ' + (data.company || '?') + '\n';
+      if (data.ram) txt += '🧠 الرام: ' + data.ram + 'GB\n';
+      txt += '🎯 الدقة: ' + (data.confidence || 0) + '%';
+      if (data.step) txt += ' (' + data.step + ')';
+      addMsg(txt, 'bot');
     }
   } catch(err) {
-    document.getElementById('statusText').textContent = 'خطأ في الاتصال';
+    removeLastSystem();
+    addMsg('خطأ في الاتصال — جرب تاني', 'system');
   }
 
   isAnalyzing = false;
   document.getElementById('captureBtn').textContent = '📸 صوّر';
-  setTimeout(startQualityMonitor, 1500);
 }
 
-function showResult(data) {
-  lastResult = data;
-  document.getElementById('resCode').textContent = data.code;
-  document.getElementById('resStorage').textContent = data.storage ? data.storage + 'GB' : '?';
-  document.getElementById('resType').textContent = data.type || '?';
-  document.getElementById('resRam').textContent = data.ram ? data.ram + 'GB' : '-';
-  document.getElementById('resCompany').textContent = data.company || '?';
-  var conf = data.confidence || 0;
-  var step = data.step || '';
-  document.getElementById('resConf').textContent = 'دقة: ' + conf + '% ' + (step ? '(' + step + ')' : '');
-  document.getElementById('resultCard').className = 'result-card show';
-  document.getElementById('statusText').textContent = 'تم التصنيف ✅';
+function freezeImage(base64) {
+  var img = document.getElementById('capturedImg');
+  img.src = 'data:image/jpeg;base64,' + base64;
+  img.style.display = 'block';
+  document.getElementById('video').style.display = 'none';
+  document.getElementById('focusRect').style.display = 'none';
+  document.getElementById('qualityBar').style.display = 'none';
+  document.getElementById('progressFill').parentElement.style.display = 'none';
+  document.getElementById('captureBtn').style.display = 'none';
+  document.getElementById('flashBtn').style.display = 'none';
+  document.getElementById('nextBtn').style.display = 'block';
+}
+
+function newPhoto() {
+  document.getElementById('capturedImg').style.display = 'none';
+  document.getElementById('video').style.display = 'block';
+  document.getElementById('focusRect').style.display = 'block';
+  document.getElementById('qualityBar').style.display = 'flex';
+  document.getElementById('progressFill').parentElement.style.display = 'block';
+  document.getElementById('captureBtn').style.display = 'block';
+  document.getElementById('flashBtn').style.display = 'block';
+  document.getElementById('nextBtn').style.display = 'none';
+  startQualityMonitor();
 }
 
 // ══════════════════════════════════════════
-// Chat with Gemini
+// Chat (same Gemini, same image)
 // ══════════════════════════════════════════
-function addChatMsg(text, role) {
+function addMsg(text, role) {
   var div = document.createElement('div');
   div.className = 'chat-msg ' + role;
   div.textContent = text;
+  div.style.whiteSpace = 'pre-wrap';
   document.getElementById('chatMsgs').appendChild(div);
   document.getElementById('chatMsgs').scrollTop = 99999;
+}
+
+function removeLastSystem() {
+  var msgs = document.getElementById('chatMsgs');
+  var last = msgs.lastChild;
+  if (last && last.className.includes('system')) msgs.removeChild(last);
 }
 
 async function sendChat() {
@@ -412,28 +331,20 @@ async function sendChat() {
   var msg = input.value.trim();
   if (!msg) return;
   input.value = '';
-  addChatMsg(msg, 'user');
+  addMsg(msg, 'user');
   chatHistory.push({role:'user', text:msg});
-
-  addChatMsg('...', 'bot');
+  addMsg('...', 'bot');
   var loadingEl = document.getElementById('chatMsgs').lastChild;
 
   try {
     var resp = await fetch('/api/chat', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        message: msg,
-        context: lastResult,
-        history: chatHistory.slice(-10)
-      })
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ message: msg, context: lastResult, history: chatHistory.slice(-10), imageBase64: lastImageBase64 })
     });
     var data = await resp.json();
     loadingEl.textContent = data.reply || 'مفيش رد';
     chatHistory.push({role:'bot', text:data.reply});
-  } catch(e) {
-    loadingEl.textContent = 'خطأ في الاتصال';
-  }
+  } catch(e) { loadingEl.textContent = 'خطأ في الاتصال'; }
 }
 
 // ══════════════════════════════════════════
@@ -441,50 +352,35 @@ async function sendChat() {
 // ══════════════════════════════════════════
 function loadTrainingCount() {
   fetch('/api/training').then(function(r){return r.json();}).then(function(d){
-    document.getElementById('trainCount').textContent = 'صور التدريب: ' + d.count;
+    document.getElementById('trainCount').textContent = 'تدريب: ' + d.count;
   }).catch(function(){});
 }
-
-function uploadTraining() {
-  document.getElementById('trainFile').click();
-}
-
+function uploadTraining() { document.getElementById('trainFile').click(); }
 function handleTrainFile(event) {
-  var file = event.target.files[0];
-  if (!file) return;
+  var file = event.target.files[0]; if (!file) return;
   var reader = new FileReader();
   reader.onload = function(e) {
     var b64 = e.target.result;
     var label = prompt('وصف الصورة (مثلاً: تفكيك عادي سامسونج)') || '';
-    fetch('/api/training/add', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ imageBase64: b64, label: label })
+    fetch('/api/training/add', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ imageBase64: b64, label: label })
     }).then(function(r){return r.json();}).then(function(d){
-      if (d.success) {
-        document.getElementById('trainCount').textContent = 'صور التدريب: ' + d.count;
-        alert('تم إضافة صورة التدريب ✅');
-      }
-    }).catch(function(){ alert('خطأ'); });
+      if (d.success) { document.getElementById('trainCount').textContent = 'تدريب: ' + d.count; addMsg('تم إضافة صورة تدريب ✅', 'system'); }
+    }).catch(function(){ addMsg('خطأ في رفع التدريب', 'system'); });
   };
-  reader.readAsDataURL(file);
-  event.target.value = '';
+  reader.readAsDataURL(file); event.target.value = '';
 }
-
 function clearTraining() {
   if (!confirm('متأكد تمسح كل صور التدريب؟')) return;
   fetch('/api/training/clear', {method:'POST'}).then(function(r){return r.json();}).then(function(){
-    document.getElementById('trainCount').textContent = 'صور التدريب: 0';
+    document.getElementById('trainCount').textContent = 'تدريب: 0';
+    addMsg('تم مسح التدريب', 'system');
   }).catch(function(){});
 }
 
 // ══════════════════════════════════════════
 // Init
 // ══════════════════════════════════════════
-window.addEventListener('load', function() {
-  startCamera();
-  loadTrainingCount();
-});
+window.addEventListener('load', function() { startCamera(); loadTrainingCount(); });
 if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js').catch(function(){}); }
 </script>
 </body>

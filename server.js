@@ -240,18 +240,35 @@ app.post('/api/lookup', (req, res) => {
 // ── POST /api/chat ──
 app.post('/api/chat', async (req, res) => {
   try {
-    const { message, context, history } = req.body;
+    const { message, context, history, imageBase64 } = req.body;
     if (!message) return res.status(400).json({ error: 'No message' });
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
     let historyText = '';
     if (history && history.length > 0) {
-      historyText = '\n\u062a\u0627\u0631\u064a\u062e:\n';
-      history.slice(-10).forEach(h => { historyText += `${h.role === 'user' ? '\u0627\u0644\u0645\u0633\u062a\u062e\u062f\u0645' : '\u0623\u0646\u062a'}: ${h.text}\n`; });
+      historyText = '\nتاريخ:\n';
+      history.slice(-10).forEach(h => { historyText += `${h.role === 'user' ? 'المستخدم' : 'أنت'}: ${h.text}\n`; });
     }
-    const chatPrompt = `\u0623\u0646\u062a \u0645\u0633\u0627\u0639\u062f \u0630\u0643\u064a \u0645\u062a\u062e\u0635\u0635 \u0641\u064a \u0634\u0631\u0627\u0626\u062d \u0627\u0644\u0630\u0627\u0643\u0631\u0629 \u0644\u0644\u0647\u0648\u0627\u062a\u0641. \u0628\u062a\u062a\u0643\u0644\u0645 \u0645\u0635\u0631\u064a.\n\u0627\u0644\u0646\u0648\u0639: \u0639\u0627\u062f\u064a \u0623\u0648 \u0632\u062c\u0627\u062c\u064a\n${context ? `\u0622\u062e\u0631 \u0643\u0648\u062f: ${context.code || '\u2014'} | ${context.storage || '?'}GB ${context.type || '?'}` : ''}${historyText}\n\u0631\u0633\u0627\u0644\u0629: "${message}"\n\u0631\u062f \u0628\u0625\u064a\u062c\u0627\u0632 \u0628\u0627\u0644\u0645\u0635\u0631\u064a.`;
-    const gResult = await model.generateContent({ contents: [{ parts: [{ text: chatPrompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 500 } });
+    const chatPrompt = `أنت خبير في شرائح الذاكرة (Memory IC chips). بتتكلم مصري.
+النوع: عادي أو زجاجي
+${context ? `آخر كود: ${context.code || '—'} | ${context.storage || '?'}GB ${context.type || '?'} | ${context.company || '?'} | رام: ${context.ram || '?'}` : ''}${historyText}
+رسالة: "${message}"
+لو في صورة مرفقة، بص عليها واستخدمها في ردك.
+واوصف دايما انت شايف ايه. لما تصنف كود، قول عرفت منين.
+رد بإيجاز بالمصري.`;
+
+    // Build parts: text + optional image
+    const parts = [];
+    if (imageBase64) {
+      parts.push({ inlineData: { mimeType: 'image/jpeg', data: imageBase64 } });
+    }
+    parts.push({ text: chatPrompt });
+
+    const gResult = await model.generateContent({
+      contents: [{ parts }],
+      generationConfig: { temperature: 0.7, maxOutputTokens: 500 }
+    });
     return res.json({ reply: gResult.response.text().trim() });
-  } catch (err) { return res.json({ reply: '\u062e\u0637\u0623 \u2014 \u062c\u0631\u0628 \u062a\u0627\u0646\u064a' }); }
+  } catch (err) { return res.json({ reply: 'خطأ — جرب تاني' }); }
 });
 
 // ── POST /api/vision-ocr (stub — no Google Vision key, just return empty) ──
