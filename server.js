@@ -239,7 +239,7 @@ app.post('/api/training/clear', (_req, res) => {
 });
 
 // ── SPA Fallback ──
-app.get('/{*path}', (_req, res) => { res.sendFile(path.join(__dirname, 'public', 'index.html')); });
+app.get('*', (_req, res) => { res.sendFile(path.join(__dirname, 'public', 'index.html')); });
 
 // ── Start ──
 app.listen(PORT, '0.0.0.0', () => {
