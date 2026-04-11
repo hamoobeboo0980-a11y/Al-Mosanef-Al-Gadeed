@@ -1,0 +1,6 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 512 512'>
+  <rect width='512' height='512' rx='80' fill='#0a0a0f'/>
+  <rect x='120' y='120' width='272' height='272' rx='20' fill='#12121a' stroke='#00d4ff' stroke-width='4'/>
+  <text x='256' y='280' text-anchor='middle' font-family='Arial' font-size='120' font-weight='bold' fill='#00d4ff'>IC</text>
+  <text x='256' y='360' text-anchor='middle' font-family='Arial' font-size='40' fill='#6b6b8a'>MEMORY</text>
+</svg>
