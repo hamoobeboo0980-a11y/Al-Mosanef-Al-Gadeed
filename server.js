@@ -152,8 +152,8 @@ app.post('/api/analyze', async function(req, res) {
 
     // Fast model for OCR analysis - no training images needed (prompt has all rules)
     var model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash-lite',
-      generationConfig: { temperature: 0, maxOutputTokens: 200 }
+      model: 'gemini-2.0-flash',
+      generationConfig: { temperature: 0 }
     });
 
     // Just image + prompt - no training overhead
