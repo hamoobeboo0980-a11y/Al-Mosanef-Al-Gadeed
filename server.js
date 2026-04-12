@@ -318,6 +318,21 @@ app.post('/api/training/clear', function(req, res) {
   res.json({ success: true });
 });
 
+
+// Temporary: list available models
+app.get('/api/models', async function(req, res) {
+  try {
+    var resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + API_KEY);
+    var data = await resp.json();
+    if (data.models) {
+      var names = data.models.filter(function(m) { return m.supportedGenerationMethods && m.supportedGenerationMethods.indexOf('generateContent') >= 0; }).map(function(m) { return m.name; });
+      res.json({ models: names });
+    } else {
+      res.json(data);
+    }
+  } catch(e) { res.json({ error: e.message }); }
+});
+
 // Catch-all
 app.get('*', function(req, res) {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -329,3 +344,4 @@ app.listen(PORT, '0.0.0.0', function() {
   console.log('Training images: ' + trainingImages.length);
   console.log('Prompt length: ' + GEMINI_PROMPT.length);
 });
+
