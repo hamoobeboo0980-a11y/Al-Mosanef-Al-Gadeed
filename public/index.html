@@ -21,7 +21,8 @@ h1{text-align:center;font-size:18px;padding:6px 0;color:#58a6ff}
 .quality-bar{display:flex;gap:8px;justify-content:center;padding:3px;font-size:11px;color:#8b949e}
 .q-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-left:3px;background:#555}
 .q-dot.good{background:#2ea043}.q-dot.warn{background:#d29922}.q-dot.bad{background:#f85149}
-.progress-track{height:2px;background:#21262d;border-radius:2px;margin:0 20px 4px}
+.progress-track{height:2px;background:#21262d;border-radius:2px;margin:0 20px 2px}
+.auto-msg{text-align:center;font-size:12px;color:#8b949e;min-height:18px;padding:2px 0 4px}
 .progress-fill{height:100%;background:#58a6ff;border-radius:2px;width:0%;transition:width 0.3s}
 
 /* Buttons row */
@@ -66,6 +67,7 @@ h1{text-align:center;font-size:18px;padding:6px 0;color:#58a6ff}
   <span>إضاءة <span class="q-dot" id="qLight"></span></span>
 </div>
 <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+<div class="auto-msg" id="autoMsg">\u062c\u0627\u0631\u064a \u062a\u0634\u063a\u064a\u0644 \u0627\u0644\u0643\u0627\u0645\u064a\u0631\u0627...</div>
 
 <!-- Buttons -->
 <div class="btns">
@@ -157,6 +159,8 @@ async function startCamera() {
   } catch(e) { imageCapture = null; }
   cameraActive = true;
   startQualityMonitor();
+  var msgEl = document.getElementById('autoMsg');
+  if (msgEl) msgEl.textContent = 'وجّه الكاميرا على شريحة الذاكرة';
   return true;
 }
 
@@ -198,6 +202,15 @@ function analyzeFrame() {
   var allGood = qS==='good' && qT==='good' && qL==='good';
   if (allGood) autoProgress = Math.min(100, autoProgress+3); else autoProgress = Math.max(0, autoProgress-5);
   document.getElementById('progressFill').style.width = autoProgress+'%';
+  var msgEl = document.getElementById('autoMsg');
+  if (msgEl) {
+    if (qL==='bad') msgEl.textContent = 'الإضاءة ضعيفة 💡';
+    else if (qS==='bad') msgEl.textContent = 'قرّب أكتر 🔍';
+    else if (qT==='bad') msgEl.textContent = 'ثبّت إيدك ✋';
+    else if (allGood && autoProgress < 100) msgEl.textContent = 'ممتاز\! ثبّت... ' + autoProgress + '%';
+    else if (allGood) msgEl.textContent = 'جاهز\! اضغط صوّر 📸';
+    else msgEl.textContent = 'وجّه الكاميرا على الشريحة';
+  }
 }
 
 // ══════════════════════════════════════════
