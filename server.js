@@ -129,7 +129,7 @@ app.post('/api/analyze', async function(req, res) {
 
     // Create model with generation config
     var model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-pro',
+      model: 'gemini-2.0-flash',
       generationConfig: { temperature: 0 }
     });
 
@@ -241,7 +241,7 @@ app.post('/api/chat', async function(req, res) {
     if (!message) return res.status(400).json({ error: 'No message' });
 
     var model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-pro',
+      model: 'gemini-2.0-flash',
       generationConfig: { temperature: 0.7, maxOutputTokens: 500 }
     });
 
