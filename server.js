@@ -152,7 +152,7 @@ app.post('/api/analyze', async function(req, res) {
 
     // Create model with generation config
     var model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-pro',
+      model: 'gemini-2.5-flash',
       generationConfig: { temperature: 0 }
     });
 
