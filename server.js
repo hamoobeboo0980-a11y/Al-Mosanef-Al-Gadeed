@@ -150,36 +150,17 @@ app.post('/api/analyze', async function(req, res) {
     var sessionId = req.body.sessionId || 'default';
     if (!imageBase64) return res.status(400).json({ error: 'No image' });
 
-    // Create model with generation config
+    // Fast model for OCR analysis - no training images needed (prompt has all rules)
     var model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash',
-      generationConfig: { temperature: 0 }
+      model: 'gemini-2.0-flash-lite',
+      generationConfig: { temperature: 0, maxOutputTokens: 200 }
     });
 
-    var isFirstCall = !sessionTrained[sessionId];
-    var parts = [];
-
-    // Add training images on first call per session
-    if (isFirstCall && trainingImages.length > 0) {
-      parts.push({ text: 'Training examples - study them carefully:' });
-      for (var t = 0; t < trainingImages.length; t++) {
-        parts.push({
-          inlineData: { mimeType: 'image/jpeg', data: trainingImages[t].b64 }
-        });
-        if (trainingImages[t].label) {
-          parts.push({ text: trainingImages[t].label });
-        }
-      }
-      parts.push({ text: '--- Now analyze this image: ---' });
-      sessionTrained[sessionId] = true;
-      console.log('Training sent:', trainingImages.length, 'images');
-    }
-
-    // Add the actual image + prompt
-    parts.push({
-      inlineData: { mimeType: 'image/jpeg', data: imageBase64 }
-    });
-    parts.push({ text: GEMINI_PROMPT });
+    // Just image + prompt - no training overhead
+    var parts = [
+      { inlineData: { mimeType: 'image/jpeg', data: imageBase64 } },
+      { text: GEMINI_PROMPT }
+    ];
 
     // Call Gemini - pass parts array directly
     var gResult = await model.generateContent(parts);

@@ -248,13 +248,13 @@ async function captureAndAnalyze() {
       canvas.width = img.width; canvas.height = img.height;
       ctx.drawImage(img, 0, 0);
       var cropped = cropToFocusBox(canvas, img.width, img.height);
-      base64 = cropped.toDataURL('image/jpeg',1.0).split(',')[1];
+      base64 = cropped.toDataURL('image/jpeg', 0.82).split(',')[1];
     } catch(e) { base64 = null; }
   }
   if (!base64) {
     ctx.drawImage(video, 0, 0, w, h);
     var cropped = cropToFocusBox(canvas, w, h);
-    base64 = cropped.toDataURL('image/jpeg',1.0).split(',')[1];
+    base64 = cropped.toDataURL('image/jpeg', 0.82).split(',')[1];
   }
   lastImageBase64 = base64;
 
