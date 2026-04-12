@@ -1,4 +1,4 @@
-<\!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -100,7 +100,7 @@ async function startCamera() {
     } catch(e) { stream = null; }
   }
 
-  if (\!stream) {
+  if (!stream) {
     setMsg('مفيش كاميرا — تأكد من الصلاحيات');
     addMsg('الكاميرا مش شغالة — افتح الإعدادات وأعطِ صلاحية الكاميرا', 'system');
     return false;
@@ -129,8 +129,8 @@ async function startCamera() {
 }
 
 async function toggleFlash() {
-  if (\!stream) return;
-  flashActive = \!flashActive;
+  if (!stream) return;
+  flashActive = !flashActive;
   try {
     var track = stream.getVideoTracks()[0];
     await track.applyConstraints({advanced:[{torch: flashActive}]});
@@ -154,9 +154,9 @@ function stopQualityMonitor() {
 }
 
 function analyzeFrame() {
-  if (\!stream || isAnalyzing) return;
+  if (!stream || isAnalyzing) return;
   var video = document.getElementById('video');
-  if (\!video || video.videoWidth === 0) return;
+  if (!video || video.videoWidth === 0) return;
   var canvas = document.getElementById('canvas');
   var ctx = canvas.getContext('2d');
   var vw = video.videoWidth, vh = video.videoHeight;
@@ -203,8 +203,8 @@ function analyzeFrame() {
   if      (qL==='bad') setMsg('الإضاءة ضعيفة 💡');
   else if (qS==='bad') setMsg('قرّب أكتر 🔍');
   else if (qT==='bad') setMsg('ثبّت إيدك ✋');
-  else if (allGood && autoProgress < 100) setMsg('ممتاز\! ثبّت... '+autoProgress+'%');
-  else if (allGood) setMsg('جاهز\! اضغط صوّر 📸');
+  else if (allGood && autoProgress < 100) setMsg('ممتاز! ثبّت... '+autoProgress+'%');
+  else if (allGood) setMsg('جاهز! اضغط صوّر 📸');
   else setMsg('وجّه الكاميرا على الشريحة');
 }
 
@@ -221,7 +221,7 @@ function cropCenter(srcCanvas) {
 }
 
 function tapCapture() {
-  if (\!cameraActive || isAnalyzing) return;
+  if (!cameraActive || isAnalyzing) return;
   stopQualityMonitor();
   captureAndAnalyze();
 }
@@ -243,7 +243,7 @@ async function captureAndAnalyze() {
       base64 = cropCenter(canvas).toDataURL('image/jpeg', 0.88).split(',')[1];
     } catch(e) { base64 = null; }
   }
-  if (\!base64) {
+  if (!base64) {
     var w = video.videoWidth || 1280, h = video.videoHeight || 720;
     canvas.width = w; canvas.height = h;
     ctx.drawImage(video, 0, 0, w, h);
@@ -265,7 +265,7 @@ async function captureAndAnalyze() {
 
     if (data.error) {
       addMsg('❌ ' + data.error, 'system');
-    } else if (\!data.code || data.code === 'NOT_FOUND') {
+    } else if (!data.code || data.code === 'NOT_FOUND') {
       addMsg('مش عارف أقرا الكود — حاول تقرّب أو تحسّن الإضاءة', 'bot');
     } else {
       lastResult = data;
@@ -332,7 +332,7 @@ function removeLastSystem() {
 async function sendChat() {
   var input = document.getElementById('chatInput');
   var msg = input.value.trim();
-  if (\!msg) return;
+  if (!msg) return;
   input.value = '';
   addMsg(msg, 'user');
   chatHistory.push({role:'user', text:msg});
@@ -357,7 +357,7 @@ function loadTrainingCount() {
 }
 function uploadTraining() { document.getElementById('trainFile').click(); }
 function handleTrainFile(e) {
-  var file = e.target.files[0]; if (\!file) return;
+  var file = e.target.files[0]; if (!file) return;
   var reader = new FileReader();
   reader.onload = function(ev) {
     var label = prompt('وصف الصورة:') || '';
@@ -370,7 +370,7 @@ function handleTrainFile(e) {
   reader.readAsDataURL(file); e.target.value='';
 }
 function clearTraining() {
-  if (\!confirm('متأكد؟')) return;
+  if (!confirm('متأكد؟')) return;
   fetch('/api/training/clear', {method:'POST'}).then(function(){
     loadTrainingCount(); addMsg('تم مسح التدريب', 'system');
   });
