@@ -24,15 +24,38 @@ try {
   process.exit(1);
 }
 
-// Training images
+// Training images - load built-in from training-images/ folder first
+var TRAINING_DIR = path.join(__dirname, 'training-images');
 var TRAINING_FILE = path.join(__dirname, 'training.json');
 var trainingImages = [];
+
+// Load built-in training images (permanent, ship with the app)
 try {
-  if (fs.existsSync(TRAINING_FILE)) {
-    trainingImages = JSON.parse(fs.readFileSync(TRAINING_FILE, 'utf8'));
+  if (fs.existsSync(TRAINING_DIR)) {
+    var files = fs.readdirSync(TRAINING_DIR).filter(function(f) { return f.endsWith('.b64'); });
+    files.sort();
+    for (var ti = 0; ti < files.length; ti++) {
+      var b64data = fs.readFileSync(path.join(TRAINING_DIR, files[ti]), 'utf8').trim();
+      var lbl = files[ti].replace('.b64', '').replace(/-/g, ' ');
+      trainingImages.push({ b64: b64data, label: lbl, builtin: true });
+    }
+    console.log('Built-in training images loaded: ' + files.length);
   }
 } catch (e) {
-  trainingImages = [];
+  console.error('Error loading built-in training:', e.message);
+}
+
+// Also load user-uploaded training images (from training.json)
+try {
+  if (fs.existsSync(TRAINING_FILE)) {
+    var userTraining = JSON.parse(fs.readFileSync(TRAINING_FILE, 'utf8'));
+    for (var ut = 0; ut < userTraining.length; ut++) {
+      trainingImages.push(userTraining[ut]);
+    }
+    console.log('User training images loaded: ' + userTraining.length);
+  }
+} catch (e) {
+  // ignore
 }
 var sessionTrained = {};
 
