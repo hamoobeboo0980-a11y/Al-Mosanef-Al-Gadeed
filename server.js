@@ -180,7 +180,7 @@ app.post('/api/analyze', async (req, res) => {
     const { imageBase64, sessionId } = req.body;
     if (!imageBase64) return res.status(400).json({ error: 'No image' });
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     const sid = sessionId || 'default';
     const isFirstCall = !sessionTrained.has(sid);
 
@@ -258,7 +258,7 @@ app.post('/api/chat', async (req, res) => {
   try {
     const { message, context, history } = req.body;
     if (!message) return res.status(400).json({ error: 'No message' });
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     let historyText = '';
     if (history && history.length > 0) {
       historyText = '\n\u062a\u0627\u0631\u064a\u062e:\n';
