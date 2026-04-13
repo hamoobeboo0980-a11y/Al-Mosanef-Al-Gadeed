@@ -359,24 +359,25 @@ async function captureAndAnalyze() {
   canvas.width = w; canvas.height = h;
   var base64 = null;
 
-  // Try ImageCapture first
-  if (imageCapture) {
+  // Freeze from video first (matches what user sees exactly)
+  ctx.drawImage(video, 0, 0, w, h);
+  freezeFrame(canvas.toDataURL('image/jpeg',0.9));
+
+  // Try ImageCapture for higher quality (skip if flash on — avoids flicker)
+  if (imageCapture && !flashActive) {
     try {
       var blob = await imageCapture.takePhoto();
       var img = await createImageBitmap(blob);
       canvas.width = img.width; canvas.height = img.height;
       ctx.drawImage(img, 0, 0);
-      // Freeze the full frame
-      freezeFrame(canvas.toDataURL('image/jpeg',0.9));
       var cropped = cropToFocusBox(canvas, img.width, img.height);
       base64 = cropped.toDataURL('image/jpeg',1.0).split(',')[1];
     } catch(e) { base64 = null; }
   }
   // Fallback: canvas from video
   if (!base64) {
+    canvas.width = w; canvas.height = h;
     ctx.drawImage(video, 0, 0, w, h);
-    // Freeze the full frame
-    freezeFrame(canvas.toDataURL('image/jpeg',0.9));
     var cropped = cropToFocusBox(canvas, w, h);
     base64 = cropped.toDataURL('image/jpeg',1.0).split(',')[1];
   }
