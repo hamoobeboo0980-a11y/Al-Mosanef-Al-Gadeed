@@ -15,7 +15,7 @@ h1{text-align:center;font-size:20px;padding:10px 0;color:#58a6ff}
 /* Camera */
 .cam-box{position:relative;width:100%;aspect-ratio:4/3;background:#161b22;border-radius:12px;overflow:hidden;margin-bottom:10px}
 .cam-box video{width:100%;height:100%;object-fit:cover}
-.focus-rect{position:absolute;top:50%;left:50%;width:25%;aspect-ratio:1/1.2;transform:translate(-50%,-50%);border:2px solid #58a6ff;border-radius:6px;pointer-events:none}
+.focus-rect{position:absolute;top:50%;left:50%;width:60%;aspect-ratio:2/1;transform:translate(-50%,-50%);border:2px solid #58a6ff;border-radius:6px;pointer-events:none}
 
 /* Quality */
 .quality-bar{display:flex;gap:8px;justify-content:center;padding:4px;font-size:12px;color:#8b949e}
@@ -42,6 +42,15 @@ h1{text-align:center;font-size:20px;padding:10px 0;color:#58a6ff}
 .result-label{font-size:11px;color:#8b949e}
 .result-value{font-size:16px;font-weight:bold;margin-top:2px}
 .result-confidence{text-align:center;font-size:11px;color:#8b949e;margin-top:8px}
+.result-actions{display:flex;gap:8px;justify-content:center;margin-top:10px}
+.btn-confirm{background:#238636;color:#fff;padding:8px 20px;border:none;border-radius:8px;font-size:14px;cursor:pointer}
+.btn-correct{background:#d29922;color:#fff;padding:8px 20px;border:none;border-radius:8px;font-size:14px;cursor:pointer}
+.btn-confirm:active,.btn-correct:active{opacity:0.7}
+.correct-form{display:none;margin-top:8px;padding:8px;background:#0d1117;border-radius:8px}
+.correct-form.show{display:block}
+.correct-form input,.correct-form select{width:100%;padding:6px;margin-bottom:6px;border:1px solid #30363d;border-radius:6px;background:#161b22;color:#e6edf3;font-size:13px}
+.frozen-overlay{position:absolute;top:0;left:0;width:100%;height:100%;display:none;z-index:5}
+.frozen-overlay img{width:100%;height:100%;object-fit:cover}
 
 /* Tabs */
 .tabs{display:flex;gap:4px;margin-bottom:10px}
@@ -74,6 +83,7 @@ h1{text-align:center;font-size:20px;padding:10px 0;color:#58a6ff}
 <!-- Camera -->
 <div class="cam-box">
   <video id="video" autoplay playsinline muted></video>
+  <div class="frozen-overlay" id="frozenOverlay"><img id="frozenImg"></div>
   <div class="focus-rect"></div>
 </div>
 <div class="quality-bar">
@@ -101,6 +111,18 @@ h1{text-align:center;font-size:20px;padding:10px 0;color:#58a6ff}
     <div class="result-item"><div class="result-label">الشركة</div><div class="result-value" id="resCompany">-</div></div>
   </div>
   <div class="result-confidence" id="resConf"></div>
+  <div class="result-actions">
+    <button class="btn-confirm" onclick="confirmResult()">✅ صح</button>
+    <button class="btn-correct" onclick="showCorrectForm()">✏️ تصحيح</button>
+  </div>
+  <div class="correct-form" id="correctForm">
+    <input id="corrCode" placeholder="الكود الصحيح">
+    <input id="corrStorage" placeholder="السعة (مثلاً 64)">
+    <select id="corrType"><option value="عادي">عادي</option><option value="زجاجي">زجاجي</option></select>
+    <input id="corrCompany" placeholder="الشركة">
+    <input id="corrRam" placeholder="الرام (مثلاً 4)">
+    <button class="btn-confirm" onclick="submitCorrection()" style="width:100%;margin-top:4px">✅ حفظ التصحيح</button>
+  </div>
 </div>
 
 <!-- Tabs -->
@@ -311,7 +333,7 @@ function analyzeFrame() {
 // Capture + Send to Gemini
 // ══════════════════════════════════════════
 function cropToFocusBox(srcCanvas, vw, vh) {
-  var bw = vw * 0.25, bh = bw / 1.2;
+  var bw = vw * 0.6, bh = bw / 2;
   var bx = (vw - bw) / 2, by = (vh - bh) / 2;
   var c = document.createElement('canvas');
   c.width = bw; c.height = bh;
@@ -344,6 +366,8 @@ async function captureAndAnalyze() {
       var img = await createImageBitmap(blob);
       canvas.width = img.width; canvas.height = img.height;
       ctx.drawImage(img, 0, 0);
+      // Freeze the full frame
+      freezeFrame(canvas.toDataURL('image/jpeg',0.9));
       var cropped = cropToFocusBox(canvas, img.width, img.height);
       base64 = cropped.toDataURL('image/jpeg',1.0).split(',')[1];
     } catch(e) { base64 = null; }
@@ -351,6 +375,8 @@ async function captureAndAnalyze() {
   // Fallback: canvas from video
   if (!base64) {
     ctx.drawImage(video, 0, 0, w, h);
+    // Freeze the full frame
+    freezeFrame(canvas.toDataURL('image/jpeg',0.9));
     var cropped = cropToFocusBox(canvas, w, h);
     base64 = cropped.toDataURL('image/jpeg',1.0).split(',')[1];
   }
@@ -367,19 +393,34 @@ async function captureAndAnalyze() {
     if (data.error) {
       document.getElementById('statusText').textContent = data.error;
       document.getElementById('resultCard').className = 'result-card';
+      unfreezeFrame();
     } else if (!data.code || data.code === 'NOT_FOUND') {
       document.getElementById('statusText').textContent = 'مش عارف أقرا الكود — جرّب تاني';
       document.getElementById('resultCard').className = 'result-card';
+      unfreezeFrame();
     } else {
       showResult(data);
+      // Stay frozen — user must press ✅ or ✏️
     }
   } catch(err) {
     document.getElementById('statusText').textContent = 'خطأ في الاتصال';
+    unfreezeFrame();
   }
 
   isAnalyzing = false;
   document.getElementById('captureBtn').textContent = '📸 صوّر';
-  setTimeout(startQualityMonitor, 1500);
+}
+
+function freezeFrame(dataUrl) {
+  var overlay = document.getElementById('frozenOverlay');
+  document.getElementById('frozenImg').src = dataUrl;
+  overlay.style.display = 'block';
+}
+
+function unfreezeFrame() {
+  document.getElementById('frozenOverlay').style.display = 'none';
+  document.getElementById('correctForm').className = 'correct-form';
+  setTimeout(startQualityMonitor, 500);
 }
 
 function showResult(data) {
@@ -476,6 +517,53 @@ function clearTraining() {
   fetch('/api/training/clear', {method:'POST'}).then(function(r){return r.json();}).then(function(){
     document.getElementById('trainCount').textContent = 'صور التدريب: 0';
   }).catch(function(){});
+}
+
+// ══════════════════════════════════════════
+// Confirm / Correct Result
+// ══════════════════════════════════════════
+function confirmResult() {
+  if (!lastResult || !lastResult.code) return;
+  fetch('/api/confirm', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(lastResult)
+  }).then(function(r){return r.json();}).then(function(){
+    document.getElementById('statusText').textContent = 'تم الحفظ ✅';
+  }).catch(function(){});
+  unfreezeFrame();
+  document.getElementById('resultCard').className = 'result-card';
+}
+
+function showCorrectForm() {
+  var form = document.getElementById('correctForm');
+  form.className = 'correct-form show';
+  if (lastResult) {
+    document.getElementById('corrCode').value = lastResult.code || '';
+    document.getElementById('corrStorage').value = lastResult.storage || '';
+    document.getElementById('corrType').value = lastResult.type || 'عادي';
+    document.getElementById('corrCompany').value = lastResult.company || '';
+    document.getElementById('corrRam').value = lastResult.ram || '';
+  }
+}
+
+function submitCorrection() {
+  var corrected = {
+    code: document.getElementById('corrCode').value.trim(),
+    correctStorage: document.getElementById('corrStorage').value.trim(),
+    correctType: document.getElementById('corrType').value,
+    company: document.getElementById('corrCompany').value.trim(),
+    correctRam: document.getElementById('corrRam').value.trim()
+  };
+  fetch('/api/correct', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(corrected)
+  }).then(function(r){return r.json();}).then(function(){
+    document.getElementById('statusText').textContent = 'تم حفظ التصحيح ✅';
+  }).catch(function(){});
+  unfreezeFrame();
+  document.getElementById('resultCard').className = 'result-card';
 }
 
 // ══════════════════════════════════════════
