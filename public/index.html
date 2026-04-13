@@ -162,23 +162,24 @@ function switchTab(tab) {
 async function findBestCamera() {
   if (bestCameraId) return bestCameraId;
   try {
+    // Get permission first (needed to see device labels)
     var temp = await navigator.mediaDevices.getUserMedia({video:true});
     temp.getTracks().forEach(function(t){t.stop();});
+    await new Promise(function(r){setTimeout(r,300);}); // brief pause for hardware release
     var devices = await navigator.mediaDevices.enumerateDevices();
     var cams = devices.filter(function(d){return d.kind==='videoinput';});
     if (cams.length <= 1) return null;
-    var best = null, bestRes = 0;
+    // Pick back camera by label — no stream cycling
+    var best = null;
     for (var i=0; i<cams.length; i++) {
-      try {
-        var ts = await navigator.mediaDevices.getUserMedia({video:{deviceId:{exact:cams[i].deviceId}}});
-        var track = ts.getVideoTracks()[0];
-        var caps = track.getCapabilities ? track.getCapabilities() : {};
-        var maxW = (caps.width && caps.width.max) ? caps.width.max : 0;
-        if (maxW > bestRes) { bestRes = maxW; best = cams[i].deviceId; }
-        ts.getTracks().forEach(function(t){t.stop();});
-      } catch(e) {}
+      var label = (cams[i].label || '').toLowerCase();
+      if (label.includes('back') || label.includes('rear') || label.includes('environment')) {
+        best = cams[i].deviceId; break;
+      }
     }
-    if (best) { bestCameraId = best; }
+    // If no label match, use last camera (on phones, back cameras come last)
+    if (!best) best = cams[cams.length-1].deviceId;
+    bestCameraId = best;
     return best;
   } catch(e) { return null; }
 }
@@ -191,7 +192,7 @@ async function startCamera() {
   if (camId) {
     try {
       stream = await navigator.mediaDevices.getUserMedia({
-        video:{deviceId:{exact:camId},width:{ideal:3840},height:{ideal:2160},focusMode:'continuous'}, audio:false
+        video:{deviceId:{exact:camId},width:{ideal:3840},height:{ideal:2160}}, audio:false
       });
     } catch(e) { stream = null; }
   }
@@ -199,7 +200,7 @@ async function startCamera() {
   if (!stream) {
     try {
       stream = await navigator.mediaDevices.getUserMedia({
-        video:{facingMode:{exact:'environment'},width:{ideal:3840},height:{ideal:2160},focusMode:'continuous'}, audio:false
+        video:{facingMode:{exact:'environment'},width:{ideal:3840},height:{ideal:2160}}, audio:false
       });
     } catch(e) { stream = null; }
   }
@@ -216,6 +217,13 @@ async function startCamera() {
   video.srcObject = stream;
   video.muted = true;
   await new Promise(function(r){ video.onloadedmetadata = function(){ video.play().then(r).catch(r); }; setTimeout(r,3000); });
+  // Apply continuous focus after stream starts (correct way — not in getUserMedia constraints)
+  try {
+    var focusTrack = stream.getVideoTracks()[0];
+    if (focusTrack.getCapabilities && focusTrack.getCapabilities().focusMode) {
+      await focusTrack.applyConstraints({advanced:[{focusMode:'continuous'}]});
+    }
+  } catch(e) {}
   // ImageCapture
   try {
     if ('ImageCapture' in window) {
