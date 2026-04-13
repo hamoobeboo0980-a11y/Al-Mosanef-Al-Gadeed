@@ -183,7 +183,7 @@ app.post('/api/analyze', async (req, res) => {
     const { imageBase64, sessionId } = req.body;
     if (!imageBase64) return res.status(400).json({ error: 'No image' });
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' });
     const sid = sessionId || 'default';
     const isFirstCall = !sessionTrained.has(sid);
 
@@ -247,13 +247,57 @@ app.post('/api/analyze', async (req, res) => {
   }
 });
 
-// ── POST /api/lookup ──
+// ── POST /api/lookup (with fuzzy matching) ──
 app.post('/api/lookup', (req, res) => {
-  const { code } = req.body;
-  if (!code || code.length < 3) return res.json({ found: false });
-  const result = searchInDB(code);
-  if (result) return res.json({ found: true, ...result });
-  return res.json({ found: false, code: code.toUpperCase() });
+  try {
+    const { code, learnedCodes, source } = req.body;
+    if (!code || code.length < 3) return res.json({ found: false });
+
+    const cleaned = cleanReadCode(code);
+    const upper = cleaned.toUpperCase();
+    const isTesseract = (source === 'tesseract');
+    console.log('🔍 lookup:', code, '→ cleaned:', cleaned, isTesseract ? '(Tesseract - no fuzzy)' : '');
+
+    if (isTesseract && !looksLikeMemoryCode(cleaned)) {
+      return res.json({ found: false, code: cleaned, reason: 'not_memory_code' });
+    }
+
+    // 1. Strict match (DB + learned)
+    let result = lookupCodeStrict(cleaned, learnedCodes);
+    if (result) {
+      result.source = result.step || 'lookup';
+      return res.json({ found: true, ...result });
+    }
+
+    // 2. Try after error fixes
+    const fixed = applyErrorMemoryFixes(upper);
+    if (fixed !== upper) {
+      result = lookupCodeStrict(fixed, learnedCodes);
+      if (result) {
+        result.source = 'errorMemory_fix';
+        result.suggestion = 'قرأته ' + cleaned + ' وصححته لـ ' + fixed;
+        return res.json({ found: true, ...result });
+      }
+    }
+
+    // 3. Fuzzy search (not for Tesseract to avoid false positives)
+    if (!isTesseract) {
+      const fuzzy = fuzzySearchInDB(cleaned);
+      if (fuzzy) {
+        return res.json({
+          found: true, code: fuzzy.code, storage: fuzzy.storage, type: fuzzy.type,
+          company: fuzzy.company, ram: fuzzy.ram || extractRam(fuzzy.code),
+          suggestion: 'قرأته ' + cleaned + ' وأقرب كود ' + fuzzy.code,
+          source: 'fuzzy', step: 'lookup_fuzzy'
+        });
+      }
+    }
+
+    return res.json({ found: false, code: cleaned });
+  } catch (error) {
+    console.error('lookup error:', error.message);
+    return res.json({ found: false });
+  }
 });
 
 // ── POST /api/chat ──
@@ -261,7 +305,7 @@ app.post('/api/chat', async (req, res) => {
   try {
     const { message, context, history } = req.body;
     if (!message) return res.status(400).json({ error: 'No message' });
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' });
     let historyText = '';
     if (history && history.length > 0) {
       historyText = '\n\u062a\u0627\u0631\u064a\u062e:\n';
@@ -273,10 +317,156 @@ app.post('/api/chat', async (req, res) => {
   } catch (err) { return res.json({ reply: '\u062e\u0637\u0623 \u2014 \u062c\u0631\u0628 \u062a\u0627\u0646\u064a' }); }
 });
 
-// ── POST /api/vision-ocr (stub — no Google Vision key, just return empty) ──
-app.post('/api/vision-ocr', (_req, res) => {
-  // No Vision API — Gemini handles everything
-  res.json({ text: '' });
+// ─── Helper Functions for OCR pipeline ───
+function cleanReadCode(code) {
+  if (!code) return '';
+  return code.toUpperCase().replace(/[^A-Z0-9\-\+]/g, '').trim();
+}
+
+function looksLikeMemoryCode(code) {
+  if (!code || code.length < 4) return false;
+  const u = code.toUpperCase();
+  return /^(KM|KLM|KLU|H9|H26|H28|HN|THG|SDIN|SDAD|SDI|SDA|JW|JZ|YMEC|TY|08EMCP|16EMCP|16ENCP)/.test(u);
+}
+
+function isValidMemoryCode(code) {
+  if (!code || code.length < 6) return false;
+  return looksLikeMemoryCode(code);
+}
+
+function applyErrorMemoryFixes(code) {
+  if (!code) return code;
+  // Common OCR misreads at known positions
+  let fixed = code;
+  // If starts with KN instead of KM
+  if (fixed.startsWith('KN') && !fixed.startsWith('KNW')) fixed = 'KM' + fixed.substring(2);
+  // H9 series: common O/0 swap
+  if (fixed.startsWith('H9')) fixed = fixed.replace(/O/g, '0');
+  // KLM/KLU: common I/1, O/0
+  if (fixed.startsWith('KL')) {
+    fixed = fixed.replace(/O(?=\d)/g, '0').replace(/I(?=\d)/g, '1');
+  }
+  return fixed;
+}
+
+function lookupCodeStrict(code, learnedCodes) {
+  const cleaned = cleanReadCode(code);
+  const upper = cleaned.toUpperCase();
+
+  // 1. Learned corrections (highest priority)
+  if (learnedCodes && learnedCodes.length > 0) {
+    for (const item of learnedCodes) {
+      if (item.corrected && item.code && item.code.length >= 4) {
+        const itemUpper = item.code.toUpperCase();
+        if (upper === itemUpper || upper.startsWith(itemUpper) || itemUpper.startsWith(upper)) {
+          return { code: cleaned, storage: item.storage, type: item.type === 'glass' ? 'زجاجي' : item.type, company: detectCompany(cleaned), ram: item.ram || extractRam(cleaned), step: 'correction' };
+        }
+      }
+    }
+  }
+
+  // 2. Database search
+  const dbResult = searchInDB(cleaned);
+  if (dbResult) { dbResult.step = 'db'; return dbResult; }
+
+  // 3. Learned codes (non-corrected)
+  if (learnedCodes && learnedCodes.length > 0) {
+    for (const item of learnedCodes) {
+      if (!item.corrected && item.code && item.code.length >= 4) {
+        const itemUpper = item.code.toUpperCase();
+        if (upper === itemUpper || upper.includes(itemUpper) || itemUpper.includes(upper)) {
+          return { code: cleaned, storage: item.storage, type: item.type === 'glass' ? 'زجاجي' : item.type, company: detectCompany(cleaned), ram: item.ram || extractRam(cleaned), step: 'learned' };
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
+function fuzzySearchInDB(code) {
+  if (!code || code.length < 4) return null;
+  const upper = code.toUpperCase().trim();
+  let bestMatch = null;
+  let bestDist = 2;
+
+  const COMMON_SWAPS = { 'O':'0','0':'O','I':'1','1':'I','B':'8','8':'B','S':'5','5':'S','G':'6','6':'G','Z':'2','2':'Z','D':'0','Q':'O' };
+
+  function weightedDistance(a, b) {
+    if (a.length === 0) return b.length;
+    if (b.length === 0) return a.length;
+    if (Math.abs(a.length - b.length) > 3) return 999;
+    const matrix = [];
+    for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+    for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+    for (let i = 1; i <= b.length; i++) {
+      for (let j = 1; j <= a.length; j++) {
+        if (b[i-1] === a[j-1]) { matrix[i][j] = matrix[i-1][j-1]; }
+        else {
+          const isCommon = COMMON_SWAPS[b[i-1]] === a[j-1] || COMMON_SWAPS[a[j-1]] === b[i-1];
+          const cost = isCommon ? 0.3 : 1;
+          matrix[i][j] = Math.min(matrix[i-1][j-1] + cost, matrix[i][j-1] + 1, matrix[i-1][j] + 1);
+        }
+      }
+    }
+    return matrix[b.length][a.length];
+  }
+
+  function searchIn(db, type) {
+    for (const [capacity, codes] of Object.entries(db)) {
+      for (const c of codes) {
+        const dist = weightedDistance(upper, c.toUpperCase());
+        if (dist > 0 && dist < bestDist) {
+          bestDist = dist;
+          const parts = capacity.split('+');
+          const storage = type === 'عادي' ? parts[0] : capacity;
+          let ram = (type === 'عادي' && parts.length > 1) ? parts[1].replace(/D[0-9]|正码|杂码|UMCP/g,'').trim() : null;
+          if (!ram) ram = extractRam(c);
+          bestMatch = { code: c, storage, type, company: detectCompany(c), originalRead: code, distance: dist, ram };
+        }
+      }
+    }
+  }
+
+  searchIn(NORMAL_DB, 'عادي');
+  searchIn(EMMC_DB, 'زجاجي');
+  searchIn(MICRON_DB, 'زجاجي');
+  return bestMatch;
+}
+
+const GEMINI_MODEL = 'gemini-2.5-pro';
+
+// ── POST /api/vision-ocr (Gemini as fast OCR reader) ──
+app.post('/api/vision-ocr', async (req, res) => {
+  try {
+    const { imageBase64 } = req.body;
+    if (!imageBase64) return res.status(400).json({ error: 'No image provided', text: '' });
+
+    const GEMINI_KEY = process.env.GEMINI_KEY || 'AIzaSyAbHZibxNq1bPUVHxW8aa8GvPAsMgCyzgQ';
+    if (!GEMINI_KEY) {
+      console.log('⚠️ GEMINI_KEY not set - OCR unavailable');
+      return res.json({ text: '', source: 'none' });
+    }
+
+    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+    const rawBase64 = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
+    const ocrPrompt = `Read ONLY the memory chip code from this image. Memory chips start with: KM, KLM, KLU, H9, H26, H28, HN, THG, SDIN, SDAD, JW, JZ, YMEC, TY, 08EMCP, 16EMCP.\nReturn ONLY the code text, nothing else. If multiple codes visible, return the most prominent one. If not found return: NOT_FOUND`;
+
+    const result = await model.generateContent({
+      contents: [{ parts: [
+        { inlineData: { data: rawBase64, mimeType: 'image/jpeg' } },
+        { text: ocrPrompt }
+      ]}],
+      generationConfig: { temperature: 0 }
+    });
+    const text = result.response.text().replace(/```/g, '').trim();
+    console.log('🔤 Gemini OCR:', text);
+    return res.json({ text: text === 'NOT_FOUND' ? '' : text, source: 'gemini_ocr' });
+
+  } catch (error) {
+    console.error('Vision OCR error:', error.message);
+    return res.json({ text: '', source: 'error', error: error.message });
+  }
 });
 
 // ── POST /api/confirm ──
