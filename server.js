@@ -320,7 +320,17 @@ app.post('/api/chat', async (req, res) => {
 // ─── Helper Functions for OCR pipeline ───
 function cleanReadCode(code) {
   if (!code) return '';
-  return code.toUpperCase().replace(/[^A-Z0-9\-\+]/g, '').trim();
+  let c = code.replace(/[.,\s]+$/g, '').trim();
+
+  // Micron: لو فيه JZ أو JW في النص - جيب الجزء ده بس
+  const jMatch = c.match(/\b(J[ZW][A-Z0-9]{2,6})\b/i);
+  if (jMatch) return jMatch[1].toUpperCase();
+
+  // Samsung/Hynix/Toshiba/SanDisk: لو فيه كود معروف في النص
+  const knownMatch = c.match(/\b(KM[A-Z0-9]{6,}|KL[MU][A-Z0-9]{6,}|H9[A-Z0-9]{6,}|H2[68][A-Z0-9]{6,}|HNST[A-Z0-9]{4,}|HN8T[A-Z0-9]{4,}|THG[A-Z0-9]{6,}|SDIN[A-Z0-9]{4,}|SDAD[A-Z0-9]{4,}|YMEC[A-Z0-9]{4,}|TY[A-Z0-9]{6,}|(?:08|16)E[MN]CP[A-Z0-9]{2,})\b/i);
+  if (knownMatch && knownMatch[1].length < c.length) return knownMatch[1].toUpperCase();
+
+  return c.toUpperCase().replace(/[^A-Z0-9\-\+]/g, '').trim();
 }
 
 function looksLikeMemoryCode(code) {
@@ -330,8 +340,21 @@ function looksLikeMemoryCode(code) {
 }
 
 function isValidMemoryCode(code) {
-  if (!code || code.length < 6) return false;
-  return looksLikeMemoryCode(code);
+  if (!code || code.length < 3) return false;
+  const u = code.toUpperCase().trim();
+  // أكواد معروفة
+  if (/^(KM[A-Z0-9]|KL[MU]|H9[A-Z]|H2[68]|HN[S8]T|THG|SDI[NDA]|SDAD|YMEC|TY[A-Z0-9]|0[8]EM|16E[MN]|J[WZ][A-Z0-9]|PA[0-9])/.test(u)) return true;
+  // أرقام بحتة 6+
+  if (/^[0-9]{6,}$/.test(u)) return true;
+  // أنماط مع شرطة (مثل 038-125BT)
+  if (/^[0-9]{3}-[0-9]{2,3}[A-Z]{2}$/.test(u)) return true;
+  // أكواد عامة: 8+ حروف وأرقام مختلطة
+  if (u.length >= 8 && /[A-Z]/.test(u) && /[0-9]/.test(u)) {
+    const letters = (u.match(/[A-Z]/g) || []).length;
+    const digits = (u.match(/[0-9]/g) || []).length;
+    if (letters >= 2 && digits >= 2) return true;
+  }
+  return false;
 }
 
 function applyErrorMemoryFixes(code) {
@@ -436,20 +459,90 @@ function fuzzySearchInDB(code) {
 
 const GEMINI_MODEL = 'gemini-2.5-pro';
 
-// ── POST /api/vision-ocr (Gemini as fast OCR reader) ──
+// ── POST /api/vision-ocr (Google Vision API → Gemini OCR fallback) ──
 app.post('/api/vision-ocr', async (req, res) => {
   try {
     const { imageBase64 } = req.body;
     if (!imageBase64) return res.status(400).json({ error: 'No image provided', text: '' });
 
-    const GEMINI_KEY = process.env.GEMINI_KEY || 'AIzaSyAbHZibxNq1bPUVHxW8aa8GvPAsMgCyzgQ';
-    if (!GEMINI_KEY) {
-      console.log('⚠️ GEMINI_KEY not set - OCR unavailable');
+    const rawBase64 = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
+    const VISION_KEY = process.env.GOOGLE_VISION_KEY || '';
+
+    // ═══ Path 1: Google Cloud Vision API (0.5-1.5 ثانية) ═══
+    if (VISION_KEY) {
+      try {
+        console.log('🔤 Vision API بيبدأ...');
+        const visionRes = await fetch(
+          `https://vision.googleapis.com/v1/images:annotate?key=${VISION_KEY}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              requests: [{
+                image: { content: rawBase64 },
+                features: [{ type: 'TEXT_DETECTION', maxResults: 1 }]
+              }]
+            })
+          }
+        );
+
+        if (visionRes.ok) {
+          const visionData = await visionRes.json();
+          const annotations = visionData.responses &&
+            visionData.responses[0] &&
+            visionData.responses[0].textAnnotations;
+
+          if (annotations && annotations.length > 0) {
+            const fullText = annotations[0].description || '';
+            console.log('🔤 Vision OCR raw:', fullText.substring(0, 200));
+
+            // استخراج كود الذاكرة من النص
+            const lines = fullText.split(/[\n\r\s]+/).filter(l => l.length >= 4);
+            let bestCode = '';
+            for (const line of lines) {
+              const cleaned = cleanReadCode(line.trim());
+              if (isValidMemoryCode(cleaned)) {
+                bestCode = cleaned;
+                break;
+              }
+            }
+
+            // لو ملقاش كود مباشرة - جرب cleanReadCode على النص الكامل
+            if (!bestCode) {
+              const fullCleaned = cleanReadCode(fullText.replace(/[\n\r]/g, ' ').trim());
+              if (isValidMemoryCode(fullCleaned)) bestCode = fullCleaned;
+            }
+
+            console.log('🔤 Vision OCR best code:', bestCode || '(لا يوجد)');
+            return res.json({
+              text: bestCode || fullText.substring(0, 100),
+              source: 'vision',
+              rawText: fullText.substring(0, 500)
+            });
+          } else {
+            console.log('🔤 Vision: لا يوجد نص في الصورة');
+            // لا نرجع — نكمل لـ Gemini fallback
+          }
+        } else {
+          const errData = await visionRes.json().catch(() => ({}));
+          console.error('Vision API error:', visionRes.status, JSON.stringify(errData).substring(0, 200));
+          // لا نرجع — نكمل لـ Gemini fallback
+        }
+      } catch (vErr) {
+        console.error('Vision API exception:', vErr.message);
+        // لا نرجع — نكمل لـ Gemini fallback
+      }
+    }
+
+    // ═══ Path 2: Gemini OCR fallback (2-4 ثواني) ═══
+    const GKEY = process.env.GEMINI_KEY || 'AIzaSyAbHZibxNq1bPUVHxW8aa8GvPAsMgCyzgQ';
+    if (!GKEY) {
+      console.log('⚠️ لا يوجد GOOGLE_VISION_KEY ولا GEMINI_KEY');
       return res.json({ text: '', source: 'none' });
     }
 
+    console.log('🔤 Gemini OCR fallback بيبدأ...');
     const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
-    const rawBase64 = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
     const ocrPrompt = `Read ONLY the memory chip code from this image. Memory chips start with: KM, KLM, KLU, H9, H26, H28, HN, THG, SDIN, SDAD, JW, JZ, YMEC, TY, 08EMCP, 16EMCP.\nReturn ONLY the code text, nothing else. If multiple codes visible, return the most prominent one. If not found return: NOT_FOUND`;
 
     const result = await model.generateContent({
