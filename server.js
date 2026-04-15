@@ -183,7 +183,7 @@ app.post('/api/analyze', async (req, res) => {
     const { imageBase64, sessionId } = req.body;
     if (!imageBase64) return res.status(400).json({ error: 'No image' });
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     const sid = sessionId || 'default';
     const isFirstCall = !sessionTrained.has(sid);
 
@@ -305,7 +305,7 @@ app.post('/api/chat', async (req, res) => {
   try {
     const { message, context, history } = req.body;
     if (!message) return res.status(400).json({ error: 'No message' });
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     let historyText = '';
     if (history && history.length > 0) {
       historyText = '\n\u062a\u0627\u0631\u064a\u062e:\n';
@@ -457,7 +457,7 @@ function fuzzySearchInDB(code) {
   return bestMatch;
 }
 
-const GEMINI_MODEL = 'gemini-2.5-pro';
+const GEMINI_MODEL = 'gemini-2.5-flash';
 
 // ── POST /api/vision-ocr (Google Vision API → Gemini OCR fallback) ──
 app.post('/api/vision-ocr', async (req, res) => {
@@ -534,27 +534,9 @@ app.post('/api/vision-ocr', async (req, res) => {
       }
     }
 
-    // ═══ Path 2: Gemini OCR fallback (2-4 ثواني) ═══
-    const GKEY = process.env.GEMINI_KEY || 'AIzaSyAbHZibxNq1bPUVHxW8aa8GvPAsMgCyzgQ';
-    if (!GKEY) {
-      console.log('⚠️ لا يوجد GOOGLE_VISION_KEY ولا GEMINI_KEY');
-      return res.json({ text: '', source: 'none' });
-    }
-
-    console.log('🔤 Gemini OCR fallback بيبدأ...');
-    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
-    const ocrPrompt = `Read ONLY the memory chip code from this image. Memory chips start with: KM, KLM, KLU, H9, H26, H28, HN, THG, SDIN, SDAD, JW, JZ, YMEC, TY, 08EMCP, 16EMCP.\nReturn ONLY the code text, nothing else. If multiple codes visible, return the most prominent one. If not found return: NOT_FOUND`;
-
-    const result = await model.generateContent({
-      contents: [{ parts: [
-        { inlineData: { data: rawBase64, mimeType: 'image/jpeg' } },
-        { text: ocrPrompt }
-      ]}],
-      generationConfig: { temperature: 0 }
-    });
-    const text = result.response.text().replace(/```/g, '').trim();
-    console.log('🔤 Gemini OCR:', text);
-    return res.json({ text: text === 'NOT_FOUND' ? '' : text, source: 'gemini_ocr' });
+    // ═══ مفيش Vision API أو فشل — يرجع فاضي والكلاينت يروح لأنالايز على طول ═══
+    console.log('🔤 Vision مش متاح أو فشل — الكلاينت هيروح لجيمناي أنالايز');
+    return res.json({ text: '', source: 'none' });
 
   } catch (error) {
     console.error('Vision OCR error:', error.message);
