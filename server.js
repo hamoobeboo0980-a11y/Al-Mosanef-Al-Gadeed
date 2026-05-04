@@ -749,6 +749,32 @@ app.post('/api/admin/add-credits', (req, res) => {
   res.json({ success: true, paidCredits: user.paidCredits });
 });
 
+// ── GET /api/admin/daily-stats?phone=ADMIN (last 7 days usage) ──
+app.get('/api/admin/daily-stats', (req, res) => {
+  const phone = (req.query.phone || '').replace(/[^0-9+]/g, '');
+  if (phone !== ADMIN_PHONE) return res.status(403).json({ error: 'غير مصرح' });
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    days.push(d.toISOString().split('T')[0]);
+  }
+  const dailyTotals = days.map(day => {
+    let total = 0;
+    Object.values(usersData).forEach(u => {
+      if (u.dailyUsage && u.dailyUsage[day]) total += u.dailyUsage[day];
+    });
+    return { date: day, count: total };
+  });
+  // Also get top users today
+  const today = days[days.length - 1];
+  const topUsers = Object.values(usersData)
+    .map(u => ({ phone: u.phone, name: u.name, today: (u.dailyUsage && u.dailyUsage[today]) || 0, total: u.totalUsed || 0 }))
+    .filter(u => u.total > 0)
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 10);
+  res.json({ dailyTotals, topUsers });
+});
+
 // ── GET /api/admin/failed-images?phone=ADMIN ──
 app.get('/api/admin/failed-images', (req, res) => {
   const phone = (req.query.phone || '').replace(/[^0-9+]/g, '');

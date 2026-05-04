@@ -254,6 +254,26 @@ h1{text-align:center;font-size:20px;padding:10px 0;color:#58a6ff}
 
 <!-- Admin Panel -->
 <div class="admin-panel" id="adminPanel">
+  <!-- Stats Cards -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+    <div style="background:#0d1117;border-radius:8px;padding:10px;text-align:center">
+      <div style="font-size:11px;color:#8b949e">المستخدمين</div>
+      <div style="font-size:20px;font-weight:bold;color:#58a6ff" id="statUsers">0</div>
+    </div>
+    <div style="background:#0d1117;border-radius:8px;padding:10px;text-align:center">
+      <div style="font-size:11px;color:#8b949e">صور النهاردة</div>
+      <div style="font-size:20px;font-weight:bold;color:#2ea043" id="statToday">0</div>
+    </div>
+    <div style="background:#0d1117;border-radius:8px;padding:10px;text-align:center">
+      <div style="font-size:11px;color:#8b949e">إجمالي كل الصور</div>
+      <div style="font-size:20px;font-weight:bold;color:#d29922" id="statTotal">0</div>
+    </div>
+  </div>
+  <!-- Daily Chart -->
+  <div style="background:#0d1117;border-radius:8px;padding:10px;margin-bottom:12px">
+    <div style="font-size:12px;color:#8b949e;margin-bottom:8px">آخر 7 أيام</div>
+    <div id="dailyChart" style="display:flex;align-items:flex-end;gap:4px;height:80px"></div>
+  </div>
   <h3 data-t="admin_users_title">بيانات المستخدمين</h3>
   <div id="adminUsersList"></div>
   <hr style="border-color:#21262d;margin:12px 0">
@@ -988,18 +1008,43 @@ async function loadHistory() {
 // ══════════════════════════════════════════
 async function loadAdminData() {
   if (!currentUser || currentUser.role !== 'admin') return;
-  // Load users
+  // Load users + stats
   try {
     var resp = await fetch('/api/admin/users?phone=' + encodeURIComponent(currentUser.phone));
     var data = await resp.json();
+    // Update stats cards
+    if (data.stats) {
+      document.getElementById('statUsers').textContent = data.stats.userCount || 0;
+      document.getElementById('statToday').textContent = data.stats.totalToday || 0;
+      document.getElementById('statTotal').textContent = data.stats.totalAll || 0;
+    }
+    // Users table
     var html = '<table class="admin-table"><tr><th>الرقم</th><th>الاسم</th><th>الوظيفة</th><th>استخدم</th><th>اليوم</th></tr>';
     (data.users || []).forEach(function(u) {
       html += '<tr><td>' + u.phone + '</td><td>' + (u.name||'-') + '</td><td>' + (u.jobType||'-') + '</td><td>' + (u.totalUsed||0) + '</td><td>' + (u.todayUsed||0) + '</td></tr>';
     });
     html += '</table>';
-    // Add credits form
     html += '<div class="admin-credits"><input id="creditPhone" placeholder="رقم المستخدم"><input id="creditAmount" placeholder="عدد" type="number" style="max-width:60px"><button onclick="addCredits()">شحن</button></div>';
     document.getElementById('adminUsersList').innerHTML = html;
+  } catch(e) {}
+  // Load daily chart
+  try {
+    var resp3 = await fetch('/api/admin/daily-stats?phone=' + encodeURIComponent(currentUser.phone));
+    var data3 = await resp3.json();
+    if (data3.dailyTotals) {
+      var max = Math.max(1, Math.max.apply(null, data3.dailyTotals.map(function(d){return d.count;})));
+      var chartHtml = '';
+      data3.dailyTotals.forEach(function(d) {
+        var h = Math.max(4, Math.round((d.count / max) * 70));
+        var dayLabel = d.date.slice(5); // MM-DD
+        chartHtml += '<div style="flex:1;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%">';
+        chartHtml += '<div style="font-size:10px;color:#58a6ff;margin-bottom:2px">' + (d.count||'') + '</div>';
+        chartHtml += '<div style="width:100%;max-width:30px;height:' + h + 'px;background:#238636;border-radius:4px 4px 0 0"></div>';
+        chartHtml += '<div style="font-size:9px;color:#484f58;margin-top:3px">' + dayLabel + '</div>';
+        chartHtml += '</div>';
+      });
+      document.getElementById('dailyChart').innerHTML = chartHtml;
+    }
   } catch(e) {}
   // Load failed images
   try {
@@ -1011,7 +1056,13 @@ async function loadAdminData() {
     }
     var html2 = '';
     data2.images.forEach(function(img) {
-      html2 += '<div class="hist-item"><span class="hist-code">' + (img.phone||'?') + '</span><span class="hist-date">' + (img.date ? new Date(img.date).toLocaleDateString('ar-EG') : '') + '</span></div>';
+      var imgUrl = '/api/admin/failed-image/' + img.imageFile + '?phone=' + encodeURIComponent(currentUser.phone);
+      html2 += '<div style="border-bottom:1px solid #21262d;padding:8px;display:flex;gap:8px;align-items:center">';
+      html2 += '<img src="' + imgUrl + '" style="width:50px;height:50px;object-fit:cover;border-radius:6px;border:1px solid #30363d" onclick="window.open(this.src)">';
+      html2 += '<div style="flex:1"><div class="hist-code">' + (img.phone||'?') + '</div>';
+      html2 += '<div class="hist-date">' + (img.date ? new Date(img.date).toLocaleDateString('ar-EG',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '') + '</div>';
+      if (img.ocrText) html2 += '<div style="font-size:10px;color:#d29922">OCR: ' + img.ocrText + '</div>';
+      html2 += '</div></div>';
     });
     document.getElementById('adminFailedList').innerHTML = html2;
   } catch(e) {}
