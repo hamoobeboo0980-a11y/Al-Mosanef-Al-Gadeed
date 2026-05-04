@@ -74,11 +74,102 @@ h1{text-align:center;font-size:20px;padding:10px 0;color:#58a6ff}
 .train-count{text-align:center;font-size:13px;color:#8b949e;margin-bottom:8px}
 .train-btns{display:flex;gap:6px;justify-content:center}
 .train-btns .btn{font-size:12px;padding:8px 12px}
+
+/* Login Screen */
+.login-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:#0d1117;z-index:100;display:flex;align-items:center;justify-content:center}
+.login-overlay.hidden{display:none}
+.login-box{width:90%;max-width:380px;background:#161b22;border:1px solid #30363d;border-radius:16px;padding:24px;text-align:center}
+.login-box h2{color:#58a6ff;margin-bottom:16px;font-size:22px}
+.login-box input,.login-box select{width:100%;padding:10px;margin-bottom:10px;border:1px solid #30363d;border-radius:8px;background:#0d1117;color:#e6edf3;font-size:14px;font-family:inherit}
+.login-box select{appearance:auto}
+.login-box .btn-login{width:100%;padding:12px;background:#238636;color:#fff;border:none;border-radius:8px;font-size:16px;cursor:pointer;margin-bottom:8px}
+.login-box .btn-login:active{opacity:0.7}
+.login-box .switch-link{color:#58a6ff;font-size:13px;cursor:pointer;text-decoration:underline}
+.login-box .err-msg{color:#f85149;font-size:13px;min-height:20px;margin-bottom:8px}
+
+/* Top Bar */
+.top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px}
+.top-bar .user-info{font-size:12px;color:#8b949e;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.top-bar .top-btns{display:flex;gap:6px}
+.top-bar .top-btn{padding:4px 10px;border:none;border-radius:6px;font-size:12px;cursor:pointer;background:#21262d;color:#c9d1d9}
+.top-bar .top-btn:active{opacity:0.7}
+.img-counter{text-align:center;font-size:12px;color:#d29922;margin-bottom:6px}
+
+/* History */
+.history-box{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:10px;margin-bottom:12px;display:none;max-height:400px;overflow-y:auto}
+.history-box.show{display:block}
+.hist-item{display:flex;justify-content:space-between;align-items:center;padding:8px;border-bottom:1px solid #21262d;font-size:13px}
+.hist-item:last-child{border-bottom:none}
+.hist-code{color:#58a6ff;font-weight:bold;font-size:13px}
+.hist-info{color:#8b949e;font-size:11px}
+.hist-date{color:#484f58;font-size:10px}
+
+/* Report Failed */
+.btn-report{background:#da3633;color:#fff;padding:8px 16px;border:none;border-radius:8px;font-size:13px;cursor:pointer;margin-top:8px;width:100%}
+.btn-report:active{opacity:0.7}
+.report-msg{text-align:center;font-size:12px;color:#2ea043;margin-top:6px;min-height:18px}
+
+/* Admin Panel */
+.admin-panel{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:12px;margin-bottom:12px;display:none}
+.admin-panel.show{display:block}
+.admin-panel h3{color:#58a6ff;font-size:15px;margin-bottom:10px}
+.admin-table{width:100%;font-size:11px;border-collapse:collapse}
+.admin-table th,.admin-table td{padding:6px 4px;border-bottom:1px solid #21262d;text-align:right}
+.admin-table th{color:#8b949e;font-weight:normal}
+.admin-table td{color:#e6edf3}
+.admin-credits{display:flex;gap:6px;margin-top:8px;align-items:center}
+.admin-credits input{flex:1;padding:6px;border:1px solid #30363d;border-radius:6px;background:#0d1117;color:#e6edf3;font-size:12px}
+.admin-credits button{padding:6px 12px;background:#238636;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer}
+
+/* Payment Prompt */
+.payment-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:90;display:none;align-items:center;justify-content:center}
+.payment-overlay.show{display:flex}
+.payment-box{background:#161b22;border:1px solid #30363d;border-radius:16px;padding:24px;text-align:center;max-width:340px;width:90%}
+.payment-box h3{color:#d29922;margin-bottom:12px}
+.payment-box p{color:#e6edf3;font-size:14px;margin-bottom:16px;line-height:1.6}
+.payment-box .vodafone-num{font-size:22px;color:#e5002b;font-weight:bold;letter-spacing:2px;margin:10px 0}
+.payment-box .btn-close-pay{padding:10px 20px;background:#21262d;color:#c9d1d9;border:none;border-radius:8px;font-size:14px;cursor:pointer}
 </style>
 </head>
 <body>
+<!-- Login/Register Overlay -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <h2 id="loginTitle">تسجيل الدخول</h2>
+    <div class="err-msg" id="loginErr"></div>
+    <input id="loginPhone" type="tel" placeholder="رقم الموبايل">
+    <input id="loginPass" type="password" placeholder="كلمة السر">
+    <!-- Registration extra fields -->
+    <div id="regFields" style="display:none">
+      <input id="regName" placeholder="الاسم (اختياري)">
+      <select id="regJobType">
+        <option value="">نوع الوظيفة...</option>
+        <option value="تاجر">تاجر</option>
+        <option value="مهندس صيانة">مهندس صيانة</option>
+        <option value="أخرى">أخرى</option>
+      </select>
+      <input id="regAddress" placeholder="العنوان (اختياري)">
+    </div>
+    <button class="btn-login" id="loginBtn" onclick="doLogin()">دخول</button>
+    <div><span class="switch-link" id="switchLink" onclick="toggleLoginMode()">مستخدم جديد؟ سجّل هنا</span></div>
+  </div>
+</div>
+
+<!-- (Payment overlay removed — free for now) -->
+
 <div class="app">
-<h1>مصنّف الذاكرة</h1>
+
+<!-- Top Bar -->
+<div class="top-bar">
+  <div class="user-info" id="userInfo"></div>
+  <div class="top-btns">
+    <button class="top-btn" id="langBtn" onclick="toggleLang()">EN</button>
+    <button class="top-btn" onclick="doLogout()">خروج</button>
+  </div>
+</div>
+
+<h1 id="appTitle">مصنّف الذاكرة</h1>
+<div class="img-counter" id="imgCounter"></div>
 
 <!-- Camera -->
 <div class="cam-box">
@@ -115,6 +206,8 @@ h1{text-align:center;font-size:20px;padding:10px 0;color:#58a6ff}
     <button class="btn-confirm" onclick="confirmResult()">✅ صح</button>
     <button class="btn-correct" onclick="showCorrectForm()">✏️ تصحيح</button>
   </div>
+  <button class="btn-report" id="reportBtn" style="display:none" onclick="reportFailed()" data-t="report_btn">📩 إرسال للشركة</button>
+  <div class="report-msg" id="reportMsg"></div>
   <div class="correct-form" id="correctForm">
     <input id="corrCode" placeholder="الكود الصحيح">
     <input id="corrStorage" placeholder="السعة (مثلاً 64)">
@@ -126,10 +219,12 @@ h1{text-align:center;font-size:20px;padding:10px 0;color:#58a6ff}
 </div>
 
 <!-- Tabs -->
-<div class="tabs">
-  <div class="tab active" onclick="switchTab('cam')">📸 كاميرا</div>
-  <div class="tab" onclick="switchTab('chat')">💬 شات</div>
-  <div class="tab" onclick="switchTab('train')">🎓 تدريب</div>
+<div class="tabs" id="tabsBar">
+  <div class="tab active" onclick="switchTab('cam')">📸 <span data-t="tab_cam">كاميرا</span></div>
+  <div class="tab" onclick="switchTab('history')">📋 <span data-t="tab_history">السجل</span></div>
+  <div class="tab" onclick="switchTab('chat')">💬 <span data-t="tab_chat">شات</span></div>
+  <div class="tab" id="trainTab" onclick="switchTab('train')" style="display:none">🎓 <span data-t="tab_train">تدريب</span></div>
+  <div class="tab" id="adminTab" onclick="switchTab('admin')" style="display:none">⚙️ <span data-t="tab_admin">إدارة</span></div>
 </div>
 
 <!-- Chat -->
@@ -141,7 +236,13 @@ h1{text-align:center;font-size:20px;padding:10px 0;color:#58a6ff}
   </div>
 </div>
 
-<!-- Training -->
+<!-- History -->
+<div class="history-box" id="historyBox">
+  <div style="text-align:center;color:#8b949e;font-size:13px;margin-bottom:8px" data-t="history_title">آخر 20 تصنيف</div>
+  <div id="historyList"></div>
+</div>
+
+<!-- Training (Admin only) -->
 <div class="train-box" id="trainBox">
   <div class="train-count" id="trainCount">صور التدريب: 0</div>
   <div class="train-btns">
@@ -149,6 +250,15 @@ h1{text-align:center;font-size:20px;padding:10px 0;color:#58a6ff}
     <button class="btn btn-sec" onclick="clearTraining()" style="background:#da3633;color:#fff">🗑 مسح الكل</button>
   </div>
   <input type="file" id="trainFile" accept="image/*" style="display:none" onchange="handleTrainFile(event)">
+</div>
+
+<!-- Admin Panel -->
+<div class="admin-panel" id="adminPanel">
+  <h3 data-t="admin_users_title">بيانات المستخدمين</h3>
+  <div id="adminUsersList"></div>
+  <hr style="border-color:#21262d;margin:12px 0">
+  <h3 data-t="admin_failed_title">صور فاشلة (شكاوى)</h3>
+  <div id="adminFailedList"></div>
 </div>
 
 </div>
@@ -165,17 +275,187 @@ var isAnalyzing = false;
 var sessionId = 'sess_' + Date.now();
 var lastResult = null;
 var chatHistory = [];
+var currentUser = null; // { phone, role, name, freeImages, paidCredits }
+var currentLang = 'ar';
+var lastCapturedBase64 = null; // for report-failed
+var resultSound = null;
+try { resultSound = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1rZ2hpZ4N2h4SFkIJ6goaBfH11eX6BfYqDin2Ih4R8hIKGfYOBf4N+fICBgYR9hYJ+hIJ+hH+HhYCBgIR7g3+DfoF/gIN8g4KFfYWAhX2CgoN+gYGDg3+DhIR/gYGBf4J/g4KAgYKBgYKCgX+CgoJ/gICCgYGCgoKBgYGBf4GAgYGBgYGBgoKCgYGBgYGBgoGBgYGBgYKBgoGBgYKBgYKBgYGBgYGBgoGBgYGBgYGBgYGBgQ=='); } catch(e) {}
+
+// ── Translations ──
+var LANG = {
+  ar: {
+    app_title: 'مصنّف الذاكرة',
+    tab_cam: 'كاميرا', tab_history: 'السجل', tab_chat: 'شات', tab_train: 'تدريب', tab_admin: 'إدارة',
+    capture_btn: '📸 صوّر', flash_btn: '🔦 فلاش', flash_on: '🔦 ON',
+    status_ready: 'جاهز', status_photo: 'بصوّر...', status_ocr: 'بقرا الكود...',
+    status_lookup: 'ببحث في القاعدة...', status_gemini: 'بحلل مع جيميناي...',
+    status_classified: 'تم التصنيف ✅', status_saved: 'تم الحفظ ✅',
+    status_no_read: 'مش عارف أقرا الكود — جرّب تاني', status_conn_err: 'خطأ في الاتصال',
+    status_analyzing: '⏳ جاري التحليل...',
+    cam_starting: 'جاري تشغيل الكاميرا...', cam_none: 'مفيش كاميرا',
+    cam_point: 'وجّه الكاميرا على شريحة الذاكرة',
+    light_low: 'الإضاءة ضعيفة', too_far: 'قرّب أكتر', stabilize: 'ثبّت إيدك',
+    quality_good: 'ممتاز! ثبّت...', quality_ready: 'جاهز! اضغط صوّر',
+    report_btn: '📩 إرسال للشركة', report_sent: 'تم إرسال الصورة — هنرد عليك',
+    history_title: 'آخر 20 تصنيف', history_empty: 'مفيش تصنيفات لسه',
+    admin_users_title: 'بيانات المستخدمين', admin_failed_title: 'صور فاشلة (شكاوى)',
+    login_title: 'تسجيل الدخول', register_title: 'حساب جديد',
+    login_btn: 'دخول', register_btn: 'تسجيل',
+    switch_to_register: 'مستخدم جديد؟ سجّل هنا', switch_to_login: 'عندك حساب؟ ادخل هنا',
+    logout: 'خروج', img_free: 'متبقي {n} صورة مجانية', img_paid: 'رصيد: {n} صورة',
+    img_unlimited: 'أدمن — بدون حدود',
+    no_credit: 'خلص الرصيد — محتاج تشحن',
+    pay_title: 'خلص الرصيد المجاني',
+    pay_msg: 'عشان تكمل استخدام المصنف، حوّل <b>0.50 جنيه</b> لكل صورة على فودافون كاش:',
+    pay_instr: 'بعد التحويل تواصل مع الأدمن عشان يفعّلك الرصيد',
+    confirm_btn: '✅ صح', correct_btn: '✏️ تصحيح',
+    res_capacity: 'السعة', res_type: 'النوع', res_ram: 'الرام', res_company: 'الشركة',
+    confidence: 'دقة'
+  },
+  en: {
+    app_title: 'Memory Classifier',
+    tab_cam: 'Camera', tab_history: 'History', tab_chat: 'Chat', tab_train: 'Training', tab_admin: 'Admin',
+    capture_btn: '📸 Capture', flash_btn: '🔦 Flash', flash_on: '🔦 ON',
+    status_ready: 'Ready', status_photo: 'Capturing...', status_ocr: 'Reading code...',
+    status_lookup: 'Searching database...', status_gemini: 'Analyzing with Gemini...',
+    status_classified: 'Classified ✅', status_saved: 'Saved ✅',
+    status_no_read: "Can't read the code — try again", status_conn_err: 'Connection error',
+    status_analyzing: '⏳ Analyzing...',
+    cam_starting: 'Starting camera...', cam_none: 'No camera found',
+    cam_point: 'Point camera at memory chip',
+    light_low: 'Low light', too_far: 'Move closer', stabilize: 'Hold steady',
+    quality_good: 'Great! Hold still...', quality_ready: 'Ready! Tap capture',
+    report_btn: '📩 Send to company', report_sent: 'Image sent — we will reply',
+    history_title: 'Last 20 classifications', history_empty: 'No classifications yet',
+    admin_users_title: 'User Data', admin_failed_title: 'Failed Images (Reports)',
+    login_title: 'Login', register_title: 'New Account',
+    login_btn: 'Login', register_btn: 'Register',
+    switch_to_register: 'New user? Register here', switch_to_login: 'Have an account? Login here',
+    logout: 'Logout', img_free: '{n} free images left', img_paid: 'Credits: {n} images',
+    img_unlimited: 'Admin — unlimited',
+    no_credit: 'No credit left — recharge needed',
+    pay_title: 'Free images used up',
+    pay_msg: 'To continue, send <b>0.50 EGP</b> per image via Vodafone Cash:',
+    pay_instr: 'After transfer, contact admin to activate your credits',
+    confirm_btn: '✅ Correct', correct_btn: '✏️ Fix',
+    res_capacity: 'Storage', res_type: 'Type', res_ram: 'RAM', res_company: 'Company',
+    confidence: 'Confidence'
+  }
+};
+
+function t(key) { return (LANG[currentLang] || LANG.ar)[key] || key; }
+
+function applyLang() {
+  document.documentElement.lang = currentLang === 'ar' ? 'ar' : 'en';
+  document.documentElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
+  document.getElementById('appTitle').textContent = t('app_title');
+  document.getElementById('langBtn').textContent = currentLang === 'ar' ? 'EN' : 'عربي';
+  document.getElementById('captureBtn').textContent = t('capture_btn');
+  document.getElementById('flashBtn').textContent = flashActive ? t('flash_on') : t('flash_btn');
+  // Update all data-t elements
+  document.querySelectorAll('[data-t]').forEach(function(el) { el.textContent = t(el.getAttribute('data-t')); });
+  // Result card labels
+  var labels = document.querySelectorAll('.result-label');
+  if (labels.length >= 4) {
+    labels[0].textContent = t('res_capacity');
+    labels[1].textContent = t('res_type');
+    labels[2].textContent = t('res_ram');
+    labels[3].textContent = t('res_company');
+  }
+  updateImgCounter();
+}
+
+function toggleLang() {
+  currentLang = currentLang === 'ar' ? 'en' : 'ar';
+  try { localStorage.setItem('memchip_lang', currentLang); } catch(e) {}
+  applyLang();
+}
+
+// ── Auth ──
+var isRegisterMode = false;
+function toggleLoginMode() {
+  isRegisterMode = !isRegisterMode;
+  document.getElementById('regFields').style.display = isRegisterMode ? 'block' : 'none';
+  document.getElementById('loginTitle').textContent = isRegisterMode ? t('register_title') : t('login_title');
+  document.getElementById('loginBtn').textContent = isRegisterMode ? t('register_btn') : t('login_btn');
+  document.getElementById('switchLink').textContent = isRegisterMode ? t('switch_to_login') : t('switch_to_register');
+  document.getElementById('loginErr').textContent = '';
+}
+
+async function doLogin() {
+  var phone = document.getElementById('loginPhone').value.trim();
+  var pass = document.getElementById('loginPass').value.trim();
+  if (!phone || !pass) { document.getElementById('loginErr').textContent = 'ادخل الرقم والباسورد'; return; }
+  document.getElementById('loginBtn').disabled = true;
+  try {
+    var endpoint = isRegisterMode ? '/api/register' : '/api/login';
+    var body = { phone: phone, password: pass };
+    if (isRegisterMode) {
+      body.name = document.getElementById('regName').value.trim();
+      body.jobType = document.getElementById('regJobType').value;
+      body.address = document.getElementById('regAddress').value.trim();
+    }
+    var resp = await fetch(endpoint, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    var data = await resp.json();
+    if (data.error) { document.getElementById('loginErr').textContent = data.error; document.getElementById('loginBtn').disabled = false; return; }
+    // Success
+    currentUser = { phone: phone, role: data.role, name: data.name || phone, freeImages: data.freeImages, paidCredits: data.paidCredits || 0, totalUsed: data.totalUsed || 0 };
+    try { localStorage.setItem('memchip_user', JSON.stringify(currentUser)); } catch(e) {}
+    onLoginSuccess();
+  } catch(e) { document.getElementById('loginErr').textContent = 'خطأ في الاتصال'; }
+  document.getElementById('loginBtn').disabled = false;
+}
+
+function onLoginSuccess() {
+  document.getElementById('loginOverlay').classList.add('hidden');
+  document.getElementById('userInfo').textContent = (currentUser.name || currentUser.phone) + (currentUser.role === 'admin' ? ' (أدمن)' : '');
+  // Show/hide tabs based on role
+  if (currentUser.role === 'admin') {
+    document.getElementById('trainTab').style.display = '';
+    document.getElementById('adminTab').style.display = '';
+  } else {
+    document.getElementById('trainTab').style.display = 'none';
+    document.getElementById('adminTab').style.display = 'none';
+  }
+  updateImgCounter();
+  applyLang();
+  loadHistory();
+}
+
+function doLogout() {
+  currentUser = null;
+  try { localStorage.removeItem('memchip_user'); } catch(e) {}
+  document.getElementById('loginOverlay').classList.remove('hidden');
+  document.getElementById('loginPhone').value = '';
+  document.getElementById('loginPass').value = '';
+  document.getElementById('loginErr').textContent = '';
+}
+
+function updateImgCounter() {
+  var el = document.getElementById('imgCounter');
+  if (!currentUser) { el.textContent = ''; return; }
+  if (currentUser.role === 'admin') { el.textContent = t('img_unlimited'); return; }
+  el.textContent = (currentLang === 'ar' ? 'استخدمت: ' : 'Used: ') + (currentUser.totalUsed || 0) + (currentLang === 'ar' ? ' صورة' : ' images');
+  el.style.color = '#8b949e';
+}
 
 // ══════════════════════════════════════════
 // Tabs
 // ══════════════════════════════════════════
 function switchTab(tab) {
-  var tabs = document.querySelectorAll('.tab');
-  tabs[0].className = 'tab' + (tab==='cam'?' active':'');
-  tabs[1].className = 'tab' + (tab==='chat'?' active':'');
-  tabs[2].className = 'tab' + (tab==='train'?' active':'');
+  var tabs = document.querySelectorAll('#tabsBar .tab');
+  tabs.forEach(function(t) { t.classList.remove('active'); });
+  // Activate correct tab
+  var idx = {cam:0, history:1, chat:2, train:3, admin:4}[tab] || 0;
+  if (tabs[idx]) tabs[idx].classList.add('active');
+  // Show/hide panels
   document.getElementById('chatBox').className = 'chat-box' + (tab==='chat'?' show':'');
+  document.getElementById('historyBox').className = 'history-box' + (tab==='history'?' show':'');
   document.getElementById('trainBox').className = 'train-box' + (tab==='train'?' show':'');
+  document.getElementById('adminPanel').className = 'admin-panel' + (tab==='admin'?' show':'');
+  // Load data when switching
+  if (tab === 'history') loadHistory();
+  if (tab === 'admin') loadAdminData();
 }
 
 // ══════════════════════════════════════════
@@ -477,8 +757,10 @@ function tapCapture() {
 
 async function captureAndAnalyze() {
   isAnalyzing = true;
-  document.getElementById('captureBtn').textContent = '⏳ جاري التحليل...';
-  document.getElementById('statusText').textContent = 'بصوّر...';
+  document.getElementById('captureBtn').textContent = t('status_analyzing');
+  document.getElementById('statusText').textContent = t('status_photo');
+  document.getElementById('reportBtn').style.display = 'none';
+  document.getElementById('reportMsg').textContent = '';
   var video = document.getElementById('video');
   var canvas = document.getElementById('canvas');
   if (!video || !canvas) return;
@@ -510,8 +792,25 @@ async function captureAndAnalyze() {
     base64 = cropped.toDataURL('image/jpeg',1.0).split(',')[1];
   }
 
+  // Save for potential report
+  lastCapturedBase64 = base64;
+
+  // Track usage
+  if (currentUser) {
+    try {
+      var useRes = await fetch('/api/user/use-image', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ phone: currentUser.phone }) });
+      var useData = await useRes.json();
+      if (useData.totalUsed) currentUser.totalUsed = useData.totalUsed;
+      updateImgCounter();
+      if (useData.rateLimited) {
+        document.getElementById('statusText').textContent = currentLang === 'ar' ? 'وصلت الحد اليومي — جرب بكره' : 'Daily limit reached — try tomorrow';
+        isAnalyzing = false; document.getElementById('captureBtn').textContent = t('capture_btn'); unfreezeFrame(); return;
+      }
+    } catch(e) {}
+  }
+
   // ═══ Step 1: Fast OCR (Gemini as OCR reader — 1-2 seconds) ═══
-  document.getElementById('statusText').textContent = 'بقرا الكود...';
+  document.getElementById('statusText').textContent = t('status_ocr');
   var ocrResult = null;
 
   try {
@@ -597,10 +896,12 @@ async function captureAndAnalyze() {
     if (data.error) {
       document.getElementById('statusText').textContent = data.error;
       document.getElementById('resultCard').className = 'result-card';
+      showReportButton();
       unfreezeFrame();
     } else if (!data.code || data.code === 'NOT_FOUND') {
-      document.getElementById('statusText').textContent = 'مش عارف أقرا الكود — جرّب تاني';
+      document.getElementById('statusText').textContent = t('status_no_read');
       document.getElementById('resultCard').className = 'result-card';
+      showReportButton();
       unfreezeFrame();
     } else {
       data.step = data.step || 'Gemini';
@@ -608,7 +909,8 @@ async function captureAndAnalyze() {
       // Stay frozen — user must press ✅ or ✏️
     }
   } catch(err) {
-    document.getElementById('statusText').textContent = 'خطأ في الاتصال';
+    document.getElementById('statusText').textContent = t('status_conn_err');
+    showReportButton();
     unfreezeFrame();
   }
 
@@ -637,9 +939,41 @@ function showResult(data) {
   document.getElementById('resCompany').textContent = data.company || '?';
   var conf = data.confidence || 0;
   var step = data.step || '';
-  document.getElementById('resConf').textContent = 'دقة: ' + conf + '% ' + (step ? '(' + step + ')' : '');
+  document.getElementById('resConf').textContent = t('confidence') + ': ' + conf + '% ' + (step ? '(' + step + ')' : '');
   document.getElementById('resultCard').className = 'result-card show';
-  document.getElementById('statusText').textContent = 'تم التصنيف ✅';
+  document.getElementById('statusText').textContent = t('status_classified');
+  document.getElementById('reportBtn').style.display = 'none';
+  // Play sound
+  try { if (resultSound) { resultSound.currentTime = 0; resultSound.play(); } } catch(e) {}
+  // Save to history
+  if (currentUser) {
+    var entry = { code: data.code, storage: data.storage, type: data.type, company: data.company, ram: data.ram, step: data.step };
+    fetch('/api/user/history', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ phone: currentUser.phone, entry: entry }) }).catch(function(){});
+  }
+}
+
+function showReportButton() {
+  // Only show report button for non-admin users when classification fails
+  if (currentUser && currentUser.role !== 'admin') {
+    document.getElementById('reportBtn').style.display = 'block';
+  }
+}
+
+async function reportFailed() {
+  if (!lastCapturedBase64) return;
+  document.getElementById('reportBtn').disabled = true;
+  try {
+    var resp = await fetch('/api/report-failed', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ phone: currentUser ? currentUser.phone : '', imageBase64: lastCapturedBase64, ocrText: '' })
+    });
+    var data = await resp.json();
+    document.getElementById('reportMsg').textContent = data.message || t('report_sent');
+    document.getElementById('reportBtn').style.display = 'none';
+  } catch(e) {
+    document.getElementById('reportMsg').textContent = t('status_conn_err');
+  }
+  document.getElementById('reportBtn').disabled = false;
 }
 
 // ══════════════════════════════════════════
@@ -772,11 +1106,90 @@ function submitCorrection() {
 }
 
 // ══════════════════════════════════════════
+// History
+// ══════════════════════════════════════════
+async function loadHistory() {
+  if (!currentUser) return;
+  try {
+    var resp = await fetch('/api/user/history?phone=' + encodeURIComponent(currentUser.phone));
+    var data = await resp.json();
+    var list = document.getElementById('historyList');
+    if (!data.history || data.history.length === 0) {
+      list.innerHTML = '<div style="text-align:center;color:#484f58;padding:20px">' + t('history_empty') + '</div>';
+      return;
+    }
+    var html = '';
+    data.history.forEach(function(h) {
+      var dt = h.date ? new Date(h.date).toLocaleDateString('ar-EG', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+      html += '<div class="hist-item"><div><span class="hist-code">' + (h.code||'?') + '</span> <span class="hist-info">' + (h.storage||'') + 'GB ' + (h.type||'') + '</span></div><div class="hist-date">' + dt + '</div></div>';
+    });
+    list.innerHTML = html;
+  } catch(e) { console.log('History load error'); }
+}
+
+// ══════════════════════════════════════════
+// Admin Functions
+// ══════════════════════════════════════════
+async function loadAdminData() {
+  if (!currentUser || currentUser.role !== 'admin') return;
+  // Load users
+  try {
+    var resp = await fetch('/api/admin/users?phone=' + encodeURIComponent(currentUser.phone));
+    var data = await resp.json();
+    var html = '<table class="admin-table"><tr><th>الرقم</th><th>الاسم</th><th>الوظيفة</th><th>استخدم</th><th>اليوم</th></tr>';
+    (data.users || []).forEach(function(u) {
+      html += '<tr><td>' + u.phone + '</td><td>' + (u.name||'-') + '</td><td>' + (u.jobType||'-') + '</td><td>' + (u.totalUsed||0) + '</td><td>' + (u.todayUsed||0) + '</td></tr>';
+    });
+    html += '</table>';
+    // Add credits form
+    html += '<div class="admin-credits"><input id="creditPhone" placeholder="رقم المستخدم"><input id="creditAmount" placeholder="عدد" type="number" style="max-width:60px"><button onclick="addCredits()">شحن</button></div>';
+    document.getElementById('adminUsersList').innerHTML = html;
+  } catch(e) {}
+  // Load failed images
+  try {
+    var resp2 = await fetch('/api/admin/failed-images?phone=' + encodeURIComponent(currentUser.phone));
+    var data2 = await resp2.json();
+    if (!data2.images || data2.images.length === 0) {
+      document.getElementById('adminFailedList').innerHTML = '<div style="color:#484f58;text-align:center">مفيش شكاوى</div>';
+      return;
+    }
+    var html2 = '';
+    data2.images.forEach(function(img) {
+      html2 += '<div class="hist-item"><span class="hist-code">' + (img.phone||'?') + '</span><span class="hist-date">' + (img.date ? new Date(img.date).toLocaleDateString('ar-EG') : '') + '</span></div>';
+    });
+    document.getElementById('adminFailedList').innerHTML = html2;
+  } catch(e) {}
+}
+
+async function addCredits() {
+  var phone = document.getElementById('creditPhone').value.trim();
+  var amount = document.getElementById('creditAmount').value.trim();
+  if (!phone || !amount) return;
+  try {
+    await fetch('/api/admin/add-credits', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ adminPhone: currentUser.phone, userPhone: phone, credits: parseInt(amount) })
+    });
+    loadAdminData();
+  } catch(e) {}
+}
+
+// ══════════════════════════════════════════
 // Init
 // ══════════════════════════════════════════
 window.addEventListener('load', function() {
+  // Check saved language
+  try { var savedLang = localStorage.getItem('memchip_lang'); if (savedLang) currentLang = savedLang; } catch(e) {}
+  // Check saved login
+  try {
+    var saved = localStorage.getItem('memchip_user');
+    if (saved) {
+      currentUser = JSON.parse(saved);
+      onLoginSuccess();
+    }
+  } catch(e) {}
   startCamera();
-  loadTrainingCount();
+  if (currentUser && currentUser.role === 'admin') loadTrainingCount();
 });
 if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js').catch(function(){}); }
 </script>

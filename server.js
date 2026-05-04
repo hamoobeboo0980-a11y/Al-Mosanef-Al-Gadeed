@@ -10,12 +10,30 @@ const path    = require('path');
 const fs      = require('fs');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
+const crypto = require('crypto');
+
 const app  = express();
 const PORT = process.env.PORT || 8080;
 
 const genAI = new GoogleGenerativeAI(
   process.env.GEMINI_KEY || 'AIzaSyAbHZibxNq1bPUVHxW8aa8GvPAsMgCyzgQ'
 );
+
+// ─── Admin phone (Mohamed) ───
+const ADMIN_PHONE = process.env.ADMIN_PHONE || '01000000000';
+const DAILY_LIMIT = parseInt(process.env.DAILY_LIMIT) || 200; // max images per user per day
+
+// ─── Users & Failed Images Storage ───
+const USERS_FILE = path.join(__dirname, 'users.json');
+const FAILED_DIR = path.join(__dirname, 'failed-images');
+let usersData = {};
+try {
+  if (fs.existsSync(USERS_FILE)) usersData = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
+} catch (_) { usersData = {}; }
+function saveUsers() { try { fs.writeFileSync(USERS_FILE, JSON.stringify(usersData, null, 2), 'utf8'); } catch(e) { console.error('Save users error:', e.message); } }
+try { if (!fs.existsSync(FAILED_DIR)) fs.mkdirSync(FAILED_DIR, { recursive: true }); } catch(_) {}
+
+function hashPass(pass) { return crypto.createHash('sha256').update(pass + 'memchip_salt').digest('hex'); }
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
@@ -582,6 +600,180 @@ app.post('/api/training/clear', (_req, res) => {
   fs.writeFileSync(TRAINING_FILE, '[]', 'utf8');
   sessionTrained.clear();
   res.json({ success: true });
+});
+
+// ═══════════════════════════════════════════════════════
+// USER AUTH & MANAGEMENT
+// ═══════════════════════════════════════════════════════
+
+// ── POST /api/register ──
+app.post('/api/register', (req, res) => {
+  const { phone, password, name, jobType, address } = req.body;
+  if (!phone || !password) return res.status(400).json({ error: 'رقم الموبايل والباسورد مطلوبين' });
+  const cleanPhone = phone.replace(/[^0-9+]/g, '');
+  if (cleanPhone.length < 10) return res.status(400).json({ error: 'رقم الموبايل غلط' });
+  if (usersData[cleanPhone]) return res.status(400).json({ error: 'الرقم ده مسجل قبل كده' });
+  usersData[cleanPhone] = {
+    name: name || '',
+    phone: cleanPhone,
+    password: hashPass(password),
+    jobType: jobType || '',   // تاجر / مهندس صيانة
+    address: address || '',
+    totalUsed: 0,
+    dailyUsage: {},
+    role: cleanPhone === ADMIN_PHONE ? 'admin' : 'user',
+    createdAt: new Date().toISOString(),
+    history: []
+  };
+  saveUsers();
+  console.log('👤 تسجيل جديد:', cleanPhone, usersData[cleanPhone].role);
+  res.json({ success: true, role: usersData[cleanPhone].role, totalUsed: 0 });
+});
+
+// ── POST /api/login ──
+app.post('/api/login', (req, res) => {
+  const { phone, password } = req.body;
+  if (!phone || !password) return res.status(400).json({ error: 'رقم الموبايل والباسورد مطلوبين' });
+  const cleanPhone = phone.replace(/[^0-9+]/g, '');
+  const user = usersData[cleanPhone];
+  if (!user) return res.status(401).json({ error: 'الرقم ده مش مسجل' });
+  if (user.password !== hashPass(password)) return res.status(401).json({ error: 'الباسورد غلط' });
+  // Auto-promote admin
+  if (cleanPhone === ADMIN_PHONE) user.role = 'admin';
+  const today = new Date().toISOString().split('T')[0];
+  res.json({
+    success: true, role: user.role, name: user.name,
+    totalUsed: user.totalUsed || 0,
+    todayUsed: (user.dailyUsage && user.dailyUsage[today]) || 0
+  });
+});
+
+// ── POST /api/user/use-image (track usage + daily rate limit) ──
+app.post('/api/user/use-image', (req, res) => {
+  const { phone } = req.body;
+  if (!phone) return res.status(400).json({ error: 'missing phone' });
+  const cleanPhone = phone.replace(/[^0-9+]/g, '');
+  const user = usersData[cleanPhone];
+  if (!user) return res.status(404).json({ error: 'user not found' });
+  // Daily usage tracking
+  const today = new Date().toISOString().split('T')[0];
+  if (!user.dailyUsage) user.dailyUsage = {};
+  if (!user.dailyUsage[today]) user.dailyUsage[today] = 0;
+  // Rate limit check (admin unlimited)
+  if (user.role !== 'admin' && user.dailyUsage[today] >= DAILY_LIMIT) {
+    return res.json({ allowed: false, rateLimited: true, totalUsed: user.totalUsed, todayUsed: user.dailyUsage[today] });
+  }
+  // Track
+  user.dailyUsage[today]++;
+  user.totalUsed = (user.totalUsed || 0) + 1;
+  // Clean old daily entries (keep last 30 days)
+  const keys = Object.keys(user.dailyUsage).sort();
+  if (keys.length > 30) { keys.slice(0, keys.length - 30).forEach(k => delete user.dailyUsage[k]); }
+  saveUsers();
+  res.json({ allowed: true, totalUsed: user.totalUsed, todayUsed: user.dailyUsage[today] });
+});
+
+// ── POST /api/user/history (add to history) ──
+app.post('/api/user/history', (req, res) => {
+  const { phone, entry } = req.body;
+  if (!phone || !entry) return res.json({ success: false });
+  const user = usersData[phone.replace(/[^0-9+]/g, '')];
+  if (!user) return res.json({ success: false });
+  if (!user.history) user.history = [];
+  entry.date = new Date().toISOString();
+  user.history.unshift(entry);
+  if (user.history.length > 20) user.history = user.history.slice(0, 20);
+  saveUsers();
+  res.json({ success: true });
+});
+
+// ── GET /api/user/history?phone=XXX ──
+app.get('/api/user/history', (req, res) => {
+  const phone = (req.query.phone || '').replace(/[^0-9+]/g, '');
+  const user = usersData[phone];
+  if (!user) return res.json({ history: [] });
+  res.json({ history: user.history || [] });
+});
+
+// ── POST /api/report-failed (save failed image + notify admin) ──
+app.post('/api/report-failed', (req, res) => {
+  const { phone, imageBase64, ocrText } = req.body;
+  if (!imageBase64) return res.status(400).json({ error: 'No image' });
+  const cleanPhone = (phone || 'anonymous').replace(/[^0-9+]/g, '') || 'anonymous';
+  const ts = Date.now();
+  const filename = `${cleanPhone}_${ts}.jpg`;
+  try {
+    const imgBuffer = Buffer.from(imageBase64, 'base64');
+    fs.writeFileSync(path.join(FAILED_DIR, filename), imgBuffer);
+    // Save metadata
+    const metaFile = path.join(FAILED_DIR, `${cleanPhone}_${ts}.json`);
+    fs.writeFileSync(metaFile, JSON.stringify({ phone: cleanPhone, ocrText: ocrText || '', date: new Date().toISOString() }));
+    console.log('📩 صورة فاشلة من:', cleanPhone);
+    res.json({ success: true, message: 'تم إرسال الصورة للشركة — هنصنفها ونرد عليك' });
+  } catch(e) {
+    console.error('Save failed image error:', e.message);
+    res.status(500).json({ error: 'فشل في حفظ الصورة' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════
+// ADMIN ENDPOINTS
+// ═══════════════════════════════════════════════════════
+
+// ── GET /api/admin/users?phone=ADMIN ──
+app.get('/api/admin/users', (req, res) => {
+  const phone = (req.query.phone || '').replace(/[^0-9+]/g, '');
+  if (phone !== ADMIN_PHONE) return res.status(403).json({ error: 'غير مصرح' });
+  const today = new Date().toISOString().split('T')[0];
+  const list = Object.values(usersData).map(u => ({
+    phone: u.phone, name: u.name, jobType: u.jobType, address: u.address,
+    role: u.role, totalUsed: u.totalUsed || 0,
+    todayUsed: (u.dailyUsage && u.dailyUsage[today]) || 0,
+    createdAt: u.createdAt
+  }));
+  // Also return global stats
+  let totalToday = 0, totalAll = 0;
+  list.forEach(u => { totalToday += u.todayUsed; totalAll += u.totalUsed; });
+  res.json({ users: list, stats: { totalToday, totalAll, userCount: list.length } });
+});
+
+// ── POST /api/admin/add-credits ──
+app.post('/api/admin/add-credits', (req, res) => {
+  const { adminPhone, userPhone, credits } = req.body;
+  if ((adminPhone || '').replace(/[^0-9+]/g, '') !== ADMIN_PHONE) return res.status(403).json({ error: 'غير مصرح' });
+  const user = usersData[(userPhone || '').replace(/[^0-9+]/g, '')];
+  if (!user) return res.status(404).json({ error: 'المستخدم مش موجود' });
+  user.paidCredits = (user.paidCredits || 0) + (parseInt(credits) || 0);
+  saveUsers();
+  console.log('💰 إضافة رصيد:', userPhone, '+', credits);
+  res.json({ success: true, paidCredits: user.paidCredits });
+});
+
+// ── GET /api/admin/failed-images?phone=ADMIN ──
+app.get('/api/admin/failed-images', (req, res) => {
+  const phone = (req.query.phone || '').replace(/[^0-9+]/g, '');
+  if (phone !== ADMIN_PHONE) return res.status(403).json({ error: 'غير مصرح' });
+  try {
+    const files = fs.readdirSync(FAILED_DIR).filter(f => f.endsWith('.json')).sort().reverse().slice(0, 50);
+    const items = files.map(f => {
+      try {
+        const meta = JSON.parse(fs.readFileSync(path.join(FAILED_DIR, f), 'utf8'));
+        meta.imageFile = f.replace('.json', '.jpg');
+        return meta;
+      } catch(_) { return null; }
+    }).filter(Boolean);
+    res.json({ images: items });
+  } catch(e) { res.json({ images: [] }); }
+});
+
+// ── GET /api/admin/failed-image/:filename ──
+app.get('/api/admin/failed-image/:filename', (req, res) => {
+  // Admin only check via query param
+  const phone = (req.query.phone || '').replace(/[^0-9+]/g, '');
+  if (phone !== ADMIN_PHONE) return res.status(403).json({ error: 'غير مصرح' });
+  const filePath = path.join(FAILED_DIR, req.params.filename);
+  if (fs.existsSync(filePath)) res.sendFile(filePath);
+  else res.status(404).json({ error: 'not found' });
 });
 
 // ── SPA Fallback ──
