@@ -91,7 +91,7 @@ h1{text-align:center;font-size:20px;padding:10px 0;color:#58a6ff}
 .top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px}
 .top-bar .user-info{font-size:12px;color:#8b949e;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .top-bar .top-btns{display:flex;gap:6px}
-.top-bar .top-btn{padding:4px 10px;border:none;border-radius:6px;font-size:12px;cursor:pointer;background:#21262d;color:#c9d1d9}
+.top-bar .top-btn{padding:8px 14px;border:none;border-radius:6px;font-size:14px;cursor:pointer;background:#21262d;color:#c9d1d9}
 .top-bar .top-btn:active{opacity:0.7}
 .img-counter{text-align:center;font-size:12px;color:#d29922;margin-bottom:6px}
 
@@ -164,7 +164,7 @@ h1{text-align:center;font-size:20px;padding:10px 0;color:#58a6ff}
   <div class="user-info" id="userInfo"></div>
   <div class="top-btns">
     <button class="top-btn" id="langBtn" onclick="toggleLang()">EN</button>
-    <button class="top-btn" onclick="doLogout()">خروج</button>
+    <button class="top-btn" id="logoutBtn" onclick="doLogout()" data-t="logout">خروج</button>
   </div>
 </div>
 
