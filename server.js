@@ -20,7 +20,7 @@ const genAI = new GoogleGenerativeAI(
 );
 
 // ─── Admin phone (Mohamed) ───
-const ADMIN_PHONE = process.env.ADMIN_PHONE || '01000000000';
+const ADMIN_PHONE = process.env.ADMIN_PHONE || '01020433847';
 const DAILY_LIMIT = parseInt(process.env.DAILY_LIMIT) || 200; // max images per user per day
 
 // ─── Users & Failed Images Storage ───
