@@ -1,5 +1,5 @@
 // Service Worker — Memory Chip Classifier PWA
-const CACHE_NAME = 'mem-chip-v14';
+const CACHE_NAME = 'mem-chip-v15';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

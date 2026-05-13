@@ -206,6 +206,7 @@ h1{text-align:center;font-size:20px;padding:10px 0;color:#58a6ff}
     <button class="btn-confirm" onclick="confirmResult()">✅ صح</button>
     <button class="btn-correct" onclick="showCorrectForm()">✏️ تصحيح</button>
   </div>
+  <button class="btn-confirm" id="shareBtn" onclick="shareResult()" style="background:#1877f2;display:none">📤 <span data-t="share_btn">مشاركة</span></button>
   <button class="btn-report" id="reportBtn" style="display:none" onclick="reportFailed()" data-t="report_btn">📩 إرسال للشركة</button>
   <div class="report-msg" id="reportMsg"></div>
   <div class="correct-form" id="correctForm">
@@ -353,6 +354,7 @@ var LANG = {
     cam_point: 'وجّه الكاميرا على شريحة الذاكرة',
     light_low: 'الإضاءة ضعيفة', too_far: 'قرّب أكتر', stabilize: 'ثبّت إيدك',
     quality_good: 'ممتاز! ثبّت...', quality_ready: 'جاهز! اضغط صوّر',
+    share_btn: 'مشاركة', share_text: 'صنّفت ذاكرة بمصنّف الذاكرة',
     report_btn: '📩 إرسال للشركة', report_sent: 'تم إرسال الصورة — هنرد عليك',
     history_title: 'آخر 20 تصنيف', history_empty: 'مفيش تصنيفات لسه',
     admin_users_title: 'بيانات المستخدمين', admin_failed_title: 'صور فاشلة (شكاوى)',
@@ -382,6 +384,7 @@ var LANG = {
     cam_point: 'Point camera at memory chip',
     light_low: 'Low light', too_far: 'Move closer', stabilize: 'Hold steady',
     quality_good: 'Great! Hold still...', quality_ready: 'Ready! Tap capture',
+    share_btn: 'Share', share_text: 'Classified a memory chip with Memory Classifier',
     report_btn: '📩 Send to company', report_sent: 'Image sent — we will reply',
     history_title: 'Last 20 classifications', history_empty: 'No classifications yet',
     admin_users_title: 'User Data', admin_failed_title: 'Failed Images (Reports)',
@@ -697,6 +700,7 @@ async function captureAndAnalyze() {
   document.getElementById('captureBtn').textContent = t('status_analyzing');
   document.getElementById('statusText').textContent = t('status_photo');
   document.getElementById('reportBtn').style.display = 'none';
+  document.getElementById('shareBtn').style.display = 'none';
   document.getElementById('reportMsg').textContent = '';
   var video = document.getElementById('video');
   var canvas = document.getElementById('canvas');
@@ -856,6 +860,7 @@ function showResult(data) {
   document.getElementById('resultCard').className = 'result-card show';
   document.getElementById('statusText').textContent = t('status_classified');
   document.getElementById('reportBtn').style.display = 'none';
+  document.getElementById('shareBtn').style.display = '';
   // Speak result in Egyptian Arabic
   speakResult(data);
   // Save to history
@@ -871,6 +876,29 @@ function showReportButton() {
   // Only show report button for non-admin users when classification fails
   if (currentUser && currentUser.role !== 'admin') {
     document.getElementById('reportBtn').style.display = 'block';
+  }
+}
+
+async function shareResult() {
+  if (!lastResult) return;
+  var text = t('share_text') + '\n';
+  text += '📱 ' + (lastResult.code || '') + '\n';
+  text += '💾 ' + (lastResult.storage || '?') + 'GB ' + (lastResult.type || '') + '\n';
+  if (lastResult.company) text += '🏭 ' + lastResult.company + '\n';
+  if (lastResult.ram) text += '🧠 RAM: ' + lastResult.ram + 'GB\n';
+  text += '\n🔗 al-mosanef-al-gadeed-production.up.railway.app';
+  if (navigator.share) {
+    try { await navigator.share({ title: t('app_title'), text: text }); } catch(e) {}
+  } else {
+    // Fallback: copy to clipboard
+    try {
+      await navigator.clipboard.writeText(text);
+      document.getElementById('statusText').textContent = currentLang === 'ar' ? 'تم النسخ ✅' : 'Copied ✅';
+    } catch(e) {
+      // Last fallback
+      var ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+      document.getElementById('statusText').textContent = currentLang === 'ar' ? 'تم النسخ ✅' : 'Copied ✅';
+    }
   }
 }
 
