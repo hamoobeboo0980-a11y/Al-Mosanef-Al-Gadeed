@@ -35,6 +35,13 @@ try {
 function saveUsers() { try { fs.writeFileSync(USERS_FILE, JSON.stringify(usersData, null, 2), 'utf8'); } catch(e) { console.error('Save users error:', e.message); } }
 try { if (!fs.existsSync(FAILED_DIR)) fs.mkdirSync(FAILED_DIR, { recursive: true }); } catch(_) {}
 
+// ─── Invite Codes ───
+const INVITES_FILE = path.join(__dirname, 'invites.json');
+let inviteCodes = {};
+try { if (fs.existsSync(INVITES_FILE)) inviteCodes = JSON.parse(fs.readFileSync(INVITES_FILE, 'utf8')); } catch(_) { inviteCodes = {}; }
+function saveInvites() { try { fs.writeFileSync(INVITES_FILE, JSON.stringify(inviteCodes, null, 2), 'utf8'); } catch(e) {} }
+const REQUIRE_INVITE = process.env.REQUIRE_INVITE !== 'false'; // default: require invite
+
 function hashPass(pass) { return crypto.createHash('sha256').update(pass + 'memchip_salt').digest('hex'); }
 
 // ─── Telegram Notification ───
@@ -643,11 +650,23 @@ app.post('/api/training/clear', (_req, res) => {
 
 // ── POST /api/register ──
 app.post('/api/register', (req, res) => {
-  const { phone, password, name, jobType, address } = req.body;
+  const { phone, password, name, jobType, address, inviteCode } = req.body;
   if (!phone || !password) return res.status(400).json({ error: 'رقم الموبايل والباسورد مطلوبين' });
   const cleanPhone = phone.replace(/[^0-9+]/g, '');
   if (cleanPhone.length < 10) return res.status(400).json({ error: 'رقم الموبايل غلط' });
   if (usersData[cleanPhone]) return res.status(400).json({ error: 'الرقم ده مسجل قبل كده' });
+  // Invite code check (admin phone exempt)
+  if (REQUIRE_INVITE && cleanPhone !== ADMIN_PHONE) {
+    const code = (inviteCode || '').trim().toUpperCase();
+    if (!code) return res.status(400).json({ error: 'كود الدعوة مطلوب' });
+    if (!inviteCodes[code] || inviteCodes[code].used >= inviteCodes[code].maxUses) {
+      return res.status(400).json({ error: 'كود الدعوة غلط أو منتهي' });
+    }
+    inviteCodes[code].used = (inviteCodes[code].used || 0) + 1;
+    inviteCodes[code].usedBy = inviteCodes[code].usedBy || [];
+    inviteCodes[code].usedBy.push(cleanPhone);
+    saveInvites();
+  }
   usersData[cleanPhone] = {
     name: name || '',
     phone: cleanPhone,
@@ -785,6 +804,27 @@ app.post('/api/admin/add-credits', (req, res) => {
   saveUsers();
   console.log('💰 إضافة رصيد:', userPhone, '+', credits);
   res.json({ success: true, paidCredits: user.paidCredits });
+});
+
+// ── POST /api/admin/create-invite (create invite code) ──
+app.post('/api/admin/create-invite', (req, res) => {
+  const { adminPhone, code, maxUses } = req.body;
+  if ((adminPhone || '').replace(/[^0-9+]/g, '') !== ADMIN_PHONE) return res.status(403).json({ error: 'غير مصرح' });
+  const invCode = (code || '').trim().toUpperCase() || ('INV' + Math.random().toString(36).substring(2, 7).toUpperCase());
+  inviteCodes[invCode] = { maxUses: parseInt(maxUses) || 5, used: 0, usedBy: [], createdAt: new Date().toISOString() };
+  saveInvites();
+  console.log('🎫 كود دعوة جديد:', invCode, 'max:', inviteCodes[invCode].maxUses);
+  res.json({ success: true, code: invCode, maxUses: inviteCodes[invCode].maxUses });
+});
+
+// ── GET /api/admin/invites?phone=ADMIN ──
+app.get('/api/admin/invites', (req, res) => {
+  const phone = (req.query.phone || '').replace(/[^0-9+]/g, '');
+  if (phone !== ADMIN_PHONE) return res.status(403).json({ error: 'غير مصرح' });
+  const list = Object.entries(inviteCodes).map(([code, data]) => ({
+    code, maxUses: data.maxUses, used: data.used || 0, usedBy: data.usedBy || [], createdAt: data.createdAt
+  }));
+  res.json({ invites: list });
 });
 
 // ── GET /api/admin/daily-stats?phone=ADMIN (last 7 days usage) ──

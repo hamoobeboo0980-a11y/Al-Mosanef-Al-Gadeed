@@ -141,6 +141,7 @@ h1{text-align:center;font-size:20px;padding:10px 0;color:#58a6ff}
     <input id="loginPass" type="password" placeholder="كلمة السر">
     <!-- Registration extra fields -->
     <div id="regFields" style="display:none">
+      <input id="regInvite" placeholder="كود الدعوة" style="text-transform:uppercase;text-align:center;font-size:16px;letter-spacing:2px;border-color:#d29922">
       <input id="regName" placeholder="الاسم (اختياري)">
       <select id="regJobType">
         <option value="">نوع الوظيفة...</option>
@@ -274,6 +275,16 @@ h1{text-align:center;font-size:20px;padding:10px 0;color:#58a6ff}
   <div style="background:#0d1117;border-radius:8px;padding:10px;margin-bottom:12px">
     <div style="font-size:12px;color:#8b949e;margin-bottom:8px">آخر 7 أيام</div>
     <div id="dailyChart" style="display:flex;align-items:flex-end;gap:4px;height:80px"></div>
+  </div>
+  <!-- Invite Codes -->
+  <div style="background:#0d1117;border-radius:8px;padding:10px;margin-bottom:12px">
+    <div style="font-size:13px;color:#58a6ff;margin-bottom:6px">🎫 أكواد الدعوة</div>
+    <div id="invitesList" style="font-size:11px;color:#8b949e;margin-bottom:6px"></div>
+    <div style="display:flex;gap:4px">
+      <input id="newInviteCode" placeholder="الكود (أو اتركه فاضي)" style="flex:1;padding:6px;border:1px solid #30363d;border-radius:4px;background:#161b22;color:#e6edf3;font-size:12px;text-transform:uppercase">
+      <input id="newInviteMax" type="number" value="5" style="width:50px;padding:6px;border:1px solid #30363d;border-radius:4px;background:#161b22;color:#e6edf3;font-size:12px" placeholder="عدد">
+      <button onclick="createInvite()" style="padding:6px 10px;background:#238636;color:#fff;border:none;border-radius:4px;font-size:12px;cursor:pointer">إنشاء</button>
+    </div>
   </div>
   <h3 data-t="admin_users_title">بيانات المستخدمين</h3>
   <div id="adminUsersList"></div>
@@ -451,6 +462,7 @@ async function doLogin() {
     var endpoint = isRegisterMode ? '/api/register' : '/api/login';
     var body = { phone: phone, password: pass };
     if (isRegisterMode) {
+      body.inviteCode = document.getElementById('regInvite').value.trim();
       body.name = document.getElementById('regName').value.trim();
       body.jobType = document.getElementById('regJobType').value;
       body.address = document.getElementById('regAddress').value.trim();
@@ -515,7 +527,7 @@ function switchTab(tab) {
   document.getElementById('adminPanel').className = 'admin-panel' + (tab==='admin'?' show':'');
   // Load data when switching
   if (tab === 'history') loadHistory();
-  if (tab === 'admin') loadAdminData();
+  if (tab === 'admin') { loadAdminData(); loadInvites(); }
 }
 
 // ══════════════════════════════════════════
@@ -1160,6 +1172,45 @@ async function addCredits() {
     });
     loadAdminData();
   } catch(e) {}
+}
+
+// ── Admin: Invite Codes ──
+async function loadInvites() {
+  if (!currentUser || currentUser.role !== 'admin') return;
+  try {
+    var resp = await fetch('/api/admin/invites?phone=' + encodeURIComponent(currentUser.phone));
+    var data = await resp.json();
+    var html = '';
+    if (!data.invites || data.invites.length === 0) { html = '<div style="color:#484f58">مفيش أكواد دعوة</div>'; }
+    else {
+      data.invites.forEach(function(inv) {
+        var remaining = inv.maxUses - inv.used;
+        var color = remaining > 0 ? '#2ea043' : '#f85149';
+        html += '<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #161b22">';
+        html += '<span style="color:#d29922;font-weight:bold;letter-spacing:1px">' + inv.code + '</span>';
+        html += '<span style="color:' + color + '">متبقي ' + remaining + '/' + inv.maxUses + '</span>';
+        html += '</div>';
+      });
+    }
+    document.getElementById('invitesList').innerHTML = html;
+  } catch(e) {}
+}
+
+async function createInvite() {
+  var code = document.getElementById('newInviteCode').value.trim();
+  var maxUses = document.getElementById('newInviteMax').value || 5;
+  try {
+    var resp = await fetch('/api/admin/create-invite', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ adminPhone: currentUser.phone, code: code, maxUses: parseInt(maxUses) })
+    });
+    var data = await resp.json();
+    if (data.success) {
+      document.getElementById('newInviteCode').value = '';
+      alert('تم إنشاء كود: ' + data.code);
+      loadInvites();
+    }
+  } catch(e) { alert('خطأ'); }
 }
 
 // ── Admin: Classify Failed Images ──
