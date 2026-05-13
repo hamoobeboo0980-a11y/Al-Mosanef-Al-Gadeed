@@ -176,6 +176,10 @@ h1{text-align:center;font-size:20px;padding:10px 0;color:#58a6ff}
 <div class="cam-box">
   <video id="video" autoplay playsinline muted></video>
   <div class="frozen-overlay" id="frozenOverlay"><img id="frozenImg"></div>
+  <!-- Gallery Image Viewer with zoom/pan -->
+  <div id="galleryOverlay" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:#000;z-index:6;overflow:hidden;touch-action:none">
+    <img id="galleryImg" style="position:absolute;transform-origin:0 0;cursor:grab" draggable="false">
+  </div>
   <div class="focus-rect"></div>
 </div>
 <div class="quality-bar">
@@ -189,8 +193,10 @@ h1{text-align:center;font-size:20px;padding:10px 0;color:#58a6ff}
 <!-- Buttons -->
 <div class="btns">
   <button class="btn btn-main" id="captureBtn" onclick="tapCapture()">📸 صوّر</button>
+  <button class="btn btn-sec" id="galleryBtn" onclick="openGallery()">📁 معرض</button>
   <button class="btn btn-sec" id="flashBtn" onclick="toggleFlash()">🔦 فلاش</button>
 </div>
+<input type="file" id="galleryInput" accept="image/*" style="display:none" onchange="handleGalleryFile(event)">
 <div class="status" id="statusText">جاهز</div>
 
 <!-- Result -->
@@ -679,6 +685,206 @@ function analyzeFrame() {
   else if (qT==='bad') document.getElementById('autoMsg').textContent = 'ثبّت إيدك';
   else if (allGood && autoProgress<100) document.getElementById('autoMsg').textContent = 'ممتاز! ثبّت... '+autoProgress+'%';
   else if (allGood) document.getElementById('autoMsg').textContent = 'جاهز! اضغط صوّر';
+}
+
+// ══════════════════════════════════════════
+// Gallery (image from phone gallery with zoom/pan)
+// ══════════════════════════════════════════
+var galleryMode = false;
+var galleryScale = 1, galleryX = 0, galleryY = 0;
+var galleryTouches = [], galleryStartDist = 0, galleryStartScale = 1;
+var galleryDragStart = null;
+
+function openGallery() {
+  document.getElementById('galleryInput').click();
+}
+
+function handleGalleryFile(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = document.getElementById('galleryImg');
+    img.onload = function() {
+      enterGalleryMode(img);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+function enterGalleryMode(img) {
+  galleryMode = true;
+  stopQualityMonitor();
+  var overlay = document.getElementById('galleryOverlay');
+  overlay.style.display = 'block';
+  // Fit image to container
+  var container = overlay.parentElement;
+  var cw = container.clientWidth, ch = container.clientHeight;
+  var iw = img.naturalWidth, ih = img.naturalHeight;
+  galleryScale = Math.max(cw / iw, ch / ih); // fill container
+  galleryX = (cw - iw * galleryScale) / 2;
+  galleryY = (ch - ih * galleryScale) / 2;
+  applyGalleryTransform();
+  // Change buttons
+  document.getElementById('captureBtn').textContent = '🔍 صنّف الصورة';
+  document.getElementById('captureBtn').onclick = classifyGalleryImage;
+  document.getElementById('flashBtn').textContent = '✖ إلغاء';
+  document.getElementById('flashBtn').onclick = exitGalleryMode;
+  document.getElementById('galleryBtn').style.display = 'none';
+  document.getElementById('autoMsg').textContent = 'كبّر وحرّك الصورة — حط الـ IC في المربع';
+  // Add touch/mouse events
+  overlay.addEventListener('pointerdown', galleryPointerDown);
+  overlay.addEventListener('pointermove', galleryPointerMove);
+  overlay.addEventListener('pointerup', galleryPointerUp);
+  overlay.addEventListener('wheel', galleryWheel);
+}
+
+function exitGalleryMode() {
+  galleryMode = false;
+  document.getElementById('galleryOverlay').style.display = 'none';
+  document.getElementById('captureBtn').textContent = t('capture_btn');
+  document.getElementById('captureBtn').onclick = tapCapture;
+  document.getElementById('flashBtn').textContent = flashActive ? t('flash_on') : t('flash_btn');
+  document.getElementById('flashBtn').onclick = toggleFlash;
+  document.getElementById('galleryBtn').style.display = '';
+  document.getElementById('autoMsg').textContent = t('cam_point');
+  startQualityMonitor();
+}
+
+function applyGalleryTransform() {
+  var img = document.getElementById('galleryImg');
+  img.style.transform = 'translate(' + galleryX + 'px,' + galleryY + 'px) scale(' + galleryScale + ')';
+}
+
+function galleryPointerDown(e) {
+  e.preventDefault();
+  galleryDragStart = { x: e.clientX - galleryX, y: e.clientY - galleryY };
+  e.target.setPointerCapture(e.pointerId);
+}
+
+function galleryPointerMove(e) {
+  if (!galleryDragStart) return;
+  e.preventDefault();
+  galleryX = e.clientX - galleryDragStart.x;
+  galleryY = e.clientY - galleryDragStart.y;
+  applyGalleryTransform();
+}
+
+function galleryPointerUp(e) {
+  galleryDragStart = null;
+}
+
+function galleryWheel(e) {
+  e.preventDefault();
+  var delta = e.deltaY > 0 ? 0.9 : 1.1;
+  galleryScale = Math.max(0.2, Math.min(10, galleryScale * delta));
+  applyGalleryTransform();
+}
+
+// Touch pinch zoom
+(function() {
+  var overlay = null;
+  var touches = {};
+  var lastDist = 0;
+  document.addEventListener('DOMContentLoaded', function() {
+    overlay = document.getElementById('galleryOverlay');
+    if (!overlay) return;
+    overlay.addEventListener('touchstart', function(e) {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        lastDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        galleryStartScale = galleryScale;
+      }
+    }, { passive: false });
+    overlay.addEventListener('touchmove', function(e) {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        var dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        galleryScale = Math.max(0.2, Math.min(10, galleryStartScale * (dist / lastDist)));
+        applyGalleryTransform();
+      }
+    }, { passive: false });
+  });
+})();
+
+async function classifyGalleryImage() {
+  if (isAnalyzing) return;
+  isAnalyzing = true;
+  document.getElementById('captureBtn').textContent = t('status_analyzing');
+  document.getElementById('reportBtn').style.display = 'none';
+  document.getElementById('shareBtn').style.display = 'none';
+  document.getElementById('reportMsg').textContent = '';
+  // Crop the focus box area from the gallery image
+  var overlay = document.getElementById('galleryOverlay');
+  var container = overlay.parentElement;
+  var cw = container.clientWidth, ch = container.clientHeight;
+  var tempCanvas = document.createElement('canvas');
+  tempCanvas.width = cw; tempCanvas.height = ch;
+  var ctx = tempCanvas.getContext('2d');
+  var img = document.getElementById('galleryImg');
+  ctx.drawImage(img, galleryX, galleryY, img.naturalWidth * galleryScale, img.naturalHeight * galleryScale);
+  // Crop focus box (30% width, aspect 1.2:1)
+  var bw = cw * 0.3, bh = bw / 1.2;
+  var bx = (cw - bw) / 2, by = (ch - bh) / 2;
+  var cropCanvas = document.createElement('canvas');
+  cropCanvas.width = bw; cropCanvas.height = bh;
+  cropCanvas.getContext('2d').drawImage(tempCanvas, bx, by, bw, bh, 0, 0, bw, bh);
+  var base64 = cropCanvas.toDataURL('image/jpeg', 1.0).split(',')[1];
+  lastCapturedBase64 = base64;
+  // Freeze the gallery view
+  freezeFrame(tempCanvas.toDataURL('image/jpeg', 0.9));
+  exitGalleryMode();
+  // Track usage
+  if (currentUser) {
+    try {
+      var useRes = await fetch('/api/user/use-image', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ phone: currentUser.phone }) });
+      var useData = await useRes.json();
+      if (useData.totalUsed) currentUser.totalUsed = useData.totalUsed;
+      updateImgCounter();
+      if (useData.rateLimited) {
+        document.getElementById('statusText').textContent = currentLang === 'ar' ? 'وصلت الحد اليومي' : 'Daily limit reached';
+        isAnalyzing = false; document.getElementById('captureBtn').textContent = t('capture_btn'); unfreezeFrame(); return;
+      }
+    } catch(e) {}
+  }
+  // Step 1: Vision OCR
+  document.getElementById('statusText').textContent = t('status_ocr');
+  var ocrResult = null;
+  try {
+    var visionRes = await fetch('/api/vision-ocr', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ imageBase64: base64 }) });
+    if (visionRes.ok) {
+      var visionData = await visionRes.json();
+      var ocrText = (visionData.text || '').trim();
+      if (ocrText && ocrText.length >= 3) {
+        document.getElementById('statusText').textContent = t('status_lookup');
+        var lookupRes = await fetch('/api/lookup', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ code: ocrText, source: 'vision' }) });
+        if (lookupRes.ok) {
+          var lookupData = await lookupRes.json();
+          if (lookupData.found && lookupData.storage && lookupData.type) {
+            ocrResult = { code: lookupData.code || ocrText, storage: lookupData.storage, type: lookupData.type, company: lookupData.company || '', ram: lookupData.ram || null, step: 'OCR+DB', confidence: lookupData.confidence || 93 };
+          }
+        }
+      }
+    }
+  } catch(e) {}
+  if (ocrResult && ocrResult.storage && ocrResult.type) {
+    showResult(ocrResult); isAnalyzing = false; document.getElementById('captureBtn').textContent = t('capture_btn'); return;
+  }
+  // Step 2: Gemini
+  document.getElementById('statusText').textContent = t('status_gemini');
+  try {
+    var resp = await fetch('/api/analyze', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ imageBase64: base64, sessionId: sessionId }) });
+    var data = await resp.json();
+    if (data.error || !data.code || data.code === 'NOT_FOUND') {
+      document.getElementById('statusText').textContent = data.error || t('status_no_read');
+      showReportButton(); unfreezeFrame();
+    } else {
+      data.step = data.step || 'Gemini'; showResult(data);
+    }
+  } catch(e) { document.getElementById('statusText').textContent = t('status_conn_err'); showReportButton(); unfreezeFrame(); }
+  isAnalyzing = false; document.getElementById('captureBtn').textContent = t('capture_btn');
 }
 
 // ══════════════════════════════════════════
