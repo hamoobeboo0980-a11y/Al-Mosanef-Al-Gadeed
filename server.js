@@ -22,6 +22,8 @@ const genAI = new GoogleGenerativeAI(
 // ─── Admin phone (Mohamed) ───
 const ADMIN_PHONE = process.env.ADMIN_PHONE || '01020433847';
 const DAILY_LIMIT = parseInt(process.env.DAILY_LIMIT) || 200; // max images per user per day
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '';
 
 // ─── Users & Failed Images Storage ───
 const USERS_FILE = path.join(__dirname, 'users.json');
@@ -34,6 +36,39 @@ function saveUsers() { try { fs.writeFileSync(USERS_FILE, JSON.stringify(usersDa
 try { if (!fs.existsSync(FAILED_DIR)) fs.mkdirSync(FAILED_DIR, { recursive: true }); } catch(_) {}
 
 function hashPass(pass) { return crypto.createHash('sha256').update(pass + 'memchip_salt').digest('hex'); }
+
+// ─── Telegram Notification ───
+async function sendTelegramNotification(message, imageBuffer) {
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return;
+  try {
+    if (imageBuffer) {
+      // Send photo with caption
+      const FormData = require('form-data') || null;
+      // Simple multipart without form-data dependency
+      const boundary = '----TGBoundary' + Date.now();
+      const parts = [];
+      parts.push(`--${boundary}\r\nContent-Disposition: form-data; name="chat_id"\r\n\r\n${TELEGRAM_CHAT_ID}`);
+      parts.push(`--${boundary}\r\nContent-Disposition: form-data; name="caption"\r\n\r\n${message}`);
+      parts.push(`--${boundary}\r\nContent-Disposition: form-data; name="photo"; filename="failed.jpg"\r\nContent-Type: image/jpeg\r\n\r\n`);
+      const header = Buffer.from(parts.join('\r\n') + '\r\n');
+      const footer = Buffer.from(`\r\n--${boundary}--\r\n`);
+      const body = Buffer.concat([header, imageBuffer, footer]);
+      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
+        method: 'POST',
+        headers: { 'Content-Type': `multipart/form-data; boundary=${boundary}` },
+        body: body
+      });
+    } else {
+      // Text only
+      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, parse_mode: 'HTML' })
+      });
+    }
+    console.log('📱 Telegram notification sent');
+  } catch(e) { console.error('Telegram error:', e.message); }
+}
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
@@ -627,6 +662,7 @@ app.post('/api/register', (req, res) => {
   };
   saveUsers();
   console.log('👤 تسجيل جديد:', cleanPhone, usersData[cleanPhone].role);
+  sendTelegramNotification(`👤 مستخدم جديد\n📱 ${cleanPhone}\n👷 ${jobType || '-'}\n📍 ${address || '-'}\n📛 ${name || '-'}`);
   res.json({ success: true, role: usersData[cleanPhone].role, totalUsed: 0 });
 });
 
@@ -709,6 +745,8 @@ app.post('/api/report-failed', (req, res) => {
     const metaFile = path.join(FAILED_DIR, `${cleanPhone}_${ts}.json`);
     fs.writeFileSync(metaFile, JSON.stringify({ phone: cleanPhone, ocrText: ocrText || '', date: new Date().toISOString() }));
     console.log('📩 صورة فاشلة من:', cleanPhone);
+    // Send Telegram notification
+    sendTelegramNotification(`📩 صورة فاشلة جديدة\n👤 من: ${cleanPhone}\n📝 OCR: ${ocrText || 'لا يوجد'}`, imgBuffer);
     res.json({ success: true, message: 'تم إرسال الصورة للشركة — هنصنفها ونرد عليك' });
   } catch(e) {
     console.error('Save failed image error:', e.message);
