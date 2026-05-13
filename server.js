@@ -802,6 +802,35 @@ app.get('/api/admin/failed-image/:filename', (req, res) => {
   else res.status(404).json({ error: 'not found' });
 });
 
+// ── POST /api/admin/classify-failed (admin classifies a failed image and adds to learned DB) ──
+app.post('/api/admin/classify-failed', (req, res) => {
+  const { adminPhone, code, storage, type, company, ram, imageFile } = req.body;
+  if ((adminPhone || '').replace(/[^0-9+]/g, '') !== ADMIN_PHONE) return res.status(403).json({ error: 'غير مصرح' });
+  if (!code || !storage || !type) return res.status(400).json({ error: 'الكود والمساحة والنوع مطلوبين' });
+  // Save to a learned-codes.json file for future lookups
+  const LEARNED_FILE = path.join(__dirname, 'learned-codes.json');
+  let learned = [];
+  try { if (fs.existsSync(LEARNED_FILE)) learned = JSON.parse(fs.readFileSync(LEARNED_FILE, 'utf8')); } catch(_) { learned = []; }
+  learned.push({ code: code.toUpperCase().trim(), storage, type, company: company || '', ram: ram || '', addedBy: 'admin', date: new Date().toISOString(), imageFile: imageFile || '' });
+  fs.writeFileSync(LEARNED_FILE, JSON.stringify(learned, null, 2), 'utf8');
+  console.log('📚 أدمن صنّف كود جديد:', code, storage + 'GB', type);
+  // Optionally delete the failed image
+  if (imageFile) {
+    try {
+      const imgPath = path.join(FAILED_DIR, imageFile);
+      const metaPath = path.join(FAILED_DIR, imageFile.replace('.jpg', '.json'));
+      if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
+      if (fs.existsSync(metaPath)) fs.unlinkSync(metaPath);
+    } catch(_) {}
+  }
+  res.json({ success: true, totalLearned: learned.length });
+});
+
+// ── Load learned codes into lookup ──
+const LEARNED_FILE_PATH = path.join(__dirname, 'learned-codes.json');
+let learnedCodes = [];
+try { if (fs.existsSync(LEARNED_FILE_PATH)) learnedCodes = JSON.parse(fs.readFileSync(LEARNED_FILE_PATH, 'utf8')); } catch(_) { learnedCodes = []; }
+
 // ── SPA Fallback ──
 app.get('*', (_req, res) => { res.sendFile(path.join(__dirname, 'public', 'index.html')); });
 

@@ -1122,13 +1122,27 @@ async function loadAdminData() {
       return;
     }
     var html2 = '';
-    data2.images.forEach(function(img) {
+    data2.images.forEach(function(img, idx) {
       var imgUrl = '/api/admin/failed-image/' + img.imageFile + '?phone=' + encodeURIComponent(currentUser.phone);
-      html2 += '<div style="border-bottom:1px solid #21262d;padding:8px;display:flex;gap:8px;align-items:center">';
-      html2 += '<img src="' + imgUrl + '" style="width:50px;height:50px;object-fit:cover;border-radius:6px;border:1px solid #30363d" onclick="window.open(this.src)">';
+      html2 += '<div style="border-bottom:1px solid #21262d;padding:8px" id="failedItem' + idx + '">';
+      html2 += '<div style="display:flex;gap:8px;align-items:center">';
+      html2 += '<img src="' + imgUrl + '" style="width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid #30363d;cursor:pointer" onclick="window.open(this.src)">';
       html2 += '<div style="flex:1"><div class="hist-code">' + (img.phone||'?') + '</div>';
       html2 += '<div class="hist-date">' + (img.date ? new Date(img.date).toLocaleDateString('ar-EG',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '') + '</div>';
       if (img.ocrText) html2 += '<div style="font-size:10px;color:#d29922">OCR: ' + img.ocrText + '</div>';
+      html2 += '</div>';
+      html2 += '<button onclick="toggleClassifyForm(' + idx + ')" style="padding:4px 8px;background:#238636;color:#fff;border:none;border-radius:4px;font-size:11px;cursor:pointer">صنّف</button>';
+      html2 += '</div>';
+      // Classify form (hidden)
+      html2 += '<div id="classifyForm' + idx + '" style="display:none;margin-top:6px;padding:8px;background:#0d1117;border-radius:6px">';
+      html2 += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">';
+      html2 += '<input placeholder="الكود" id="cfCode' + idx + '" style="padding:4px;border:1px solid #30363d;border-radius:4px;background:#161b22;color:#e6edf3;font-size:12px">';
+      html2 += '<input placeholder="المساحة (64)" id="cfStorage' + idx + '" style="padding:4px;border:1px solid #30363d;border-radius:4px;background:#161b22;color:#e6edf3;font-size:12px">';
+      html2 += '<select id="cfType' + idx + '" style="padding:4px;border:1px solid #30363d;border-radius:4px;background:#161b22;color:#e6edf3;font-size:12px"><option value="عادي">عادي</option><option value="زجاجي">زجاجي</option></select>';
+      html2 += '<input placeholder="الشركة" id="cfCompany' + idx + '" style="padding:4px;border:1px solid #30363d;border-radius:4px;background:#161b22;color:#e6edf3;font-size:12px">';
+      html2 += '</div>';
+      html2 += '<input placeholder="الرام (اختياري)" id="cfRam' + idx + '" style="width:100%;margin-top:4px;padding:4px;border:1px solid #30363d;border-radius:4px;background:#161b22;color:#e6edf3;font-size:12px">';
+      html2 += '<button onclick="submitClassify(' + idx + ',\'' + (img.imageFile||'') + '\')" style="width:100%;margin-top:4px;padding:6px;background:#238636;color:#fff;border:none;border-radius:4px;font-size:12px;cursor:pointer">✅ حفظ التصنيف</button>';
       html2 += '</div></div>';
     });
     document.getElementById('adminFailedList').innerHTML = html2;
@@ -1146,6 +1160,32 @@ async function addCredits() {
     });
     loadAdminData();
   } catch(e) {}
+}
+
+// ── Admin: Classify Failed Images ──
+function toggleClassifyForm(idx) {
+  var form = document.getElementById('classifyForm' + idx);
+  if (form) form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+async function submitClassify(idx, imageFile) {
+  var code = document.getElementById('cfCode' + idx).value.trim();
+  var storage = document.getElementById('cfStorage' + idx).value.trim();
+  var type = document.getElementById('cfType' + idx).value;
+  var company = document.getElementById('cfCompany' + idx).value.trim();
+  var ram = document.getElementById('cfRam' + idx).value.trim();
+  if (!code || !storage) { alert('الكود والمساحة مطلوبين'); return; }
+  try {
+    var resp = await fetch('/api/admin/classify-failed', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ adminPhone: currentUser.phone, code: code, storage: storage, type: type, company: company, ram: ram, imageFile: imageFile })
+    });
+    var data = await resp.json();
+    if (data.success) {
+      var item = document.getElementById('failedItem' + idx);
+      if (item) item.innerHTML = '<div style="text-align:center;color:#2ea043;padding:8px">✅ تم تصنيف ' + code + ' = ' + storage + 'GB ' + type + '</div>';
+    } else { alert(data.error || 'خطأ'); }
+  } catch(e) { alert('خطأ في الاتصال'); }
 }
 
 // ══════════════════════════════════════════
