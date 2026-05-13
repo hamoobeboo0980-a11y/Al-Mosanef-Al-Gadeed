@@ -298,8 +298,45 @@ var chatHistory = [];
 var currentUser = null; // { phone, role, name, freeImages, paidCredits }
 var currentLang = 'ar';
 var lastCapturedBase64 = null; // for report-failed
-var resultSound = null;
-try { resultSound = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1rZ2hpZ4N2h4SFkIJ6goaBfH11eX6BfYqDin2Ih4R8hIKGfYOBf4N+fICBgYR9hYJ+hIJ+hH+HhYCBgIR7g3+DfoF/gIN8g4KFfYWAhX2CgoN+gYGDg3+DhIR/gYGBf4J/g4KAgYKBgYKCgX+CgoJ/gICCgYGCgoKBgYGBf4GAgYGBgYGBgoKCgYGBgYGBgoGBgYGBgYKBgoGBgYKBgYKBgYGBgYGBgoGBgYGBgYGBgYGBgQ=='); } catch(e) {}
+// ── TTS (Text-to-Speech) — ينطق النتيجة بالمصري ──
+function speakResult(data) {
+  try {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel(); // لو فيه حاجة بتتنطق - وقفها
+    var text = '';
+    if (data.storage) text += data.storage;
+    if (data.type) text += ' ' + data.type;
+    if (data.company) text += ' ' + data.company;
+    if (data.ram) text += ' رام ' + data.ram;
+    if (!text.trim()) return;
+    var utter = new SpeechSynthesisUtterance(text.trim());
+    utter.lang = 'ar-EG';
+    utter.rate = 1.1;
+    utter.pitch = 1.0;
+    // Try to find Arabic voice
+    var voices = window.speechSynthesis.getVoices();
+    for (var i = 0; i < voices.length; i++) {
+      if (voices[i].lang && voices[i].lang.startsWith('ar')) { utter.voice = voices[i]; break; }
+    }
+    window.speechSynthesis.speak(utter);
+  } catch(e) { console.log('TTS error:', e.message); }
+}
+function speakFail() {
+  try {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    var utter = new SpeechSynthesisUtterance('مش عارف أصنف — جرب تاني');
+    utter.lang = 'ar-EG';
+    utter.rate = 1.1;
+    var voices = window.speechSynthesis.getVoices();
+    for (var i = 0; i < voices.length; i++) {
+      if (voices[i].lang && voices[i].lang.startsWith('ar')) { utter.voice = voices[i]; break; }
+    }
+    window.speechSynthesis.speak(utter);
+  } catch(e) {}
+}
+// Preload voices (some browsers need this)
+if ('speechSynthesis' in window) { window.speechSynthesis.onvoiceschanged = function() { window.speechSynthesis.getVoices(); }; }
 
 // ── Translations ──
 var LANG = {
@@ -819,8 +856,8 @@ function showResult(data) {
   document.getElementById('resultCard').className = 'result-card show';
   document.getElementById('statusText').textContent = t('status_classified');
   document.getElementById('reportBtn').style.display = 'none';
-  // Play sound
-  try { if (resultSound) { resultSound.currentTime = 0; resultSound.play(); } } catch(e) {}
+  // Speak result in Egyptian Arabic
+  speakResult(data);
   // Save to history
   if (currentUser) {
     var entry = { code: data.code, storage: data.storage, type: data.type, company: data.company, ram: data.ram, step: data.step };
@@ -829,6 +866,8 @@ function showResult(data) {
 }
 
 function showReportButton() {
+  // Speak fail message
+  speakFail();
   // Only show report button for non-admin users when classification fails
   if (currentUser && currentUser.role !== 'admin') {
     document.getElementById('reportBtn').style.display = 'block';
